@@ -9,6 +9,19 @@ const getWaterLevels = async (req, res) => {
     }
 };
 
+const updateWaterLevel = async (req, res) => {
+    try {
+        const updated = await waterService.updateWaterLevel(req.params.id, req.body);
+        if (!updated) {
+            return res.status(404).json({ message: 'Water tank not found' });
+        }
+        return res.status(200).json(updated);
+    } catch (error) {
+        return res.status(500).json({ message: 'Error updating water level', error: error.message });
+    }
+};
+
 module.exports = {
     getWaterLevels,
+    updateWaterLevel,
 };

@@ -1,39 +1,50 @@
 const express = require('express');
 const router = express.Router();
-
-let chargingSlots = [
-    { id: 'EV1', status: 'available', currentBooking: null },
-    { id: 'EV2', status: 'charging', currentBooking: 'Resident-A101' },
-    { id: 'EV3', status: 'available', currentBooking: null }
-];
+const state = require('../data/state');
 
 router.get('/', (req, res) => {
-    res.json(chargingSlots);
+  res.json(state.evStations);
 });
 
 router.post('/book', (req, res) => {
-    const { slotId, user } = req.body;
-    let slot = chargingSlots.find(s => s.id === slotId);
-    if (slot && slot.status === 'available') {
-        slot.status = 'booked';
-        slot.currentBooking = user;
-        res.json({ message: 'Slot booked successfully', slot });
-    } else {
-        res.status(400).json({ message: 'Slot not available' });
-    }
+  const { stationId, user } = req.body;
+  const station = state.evStations.find((item) => item.id === stationId);
+
+  if (!station || station.status !== 'Available') {
+    return res.status(400).json({ message: 'Station not available' });
+  }
+
+  station.status = 'Occupied';
+  station.currentBooking = user || 'Resident';
+  return res.json({ message: 'Station booked', station });
 });
 
-router.put('/:id', (req, res) => { // Admin override
-    const { id } = req.params;
-    const { status } = req.body;
-    let slot = chargingSlots.find(s => s.id === id);
-    if (slot) {
-        slot.status = status;
-        if (status === 'available') slot.currentBooking = null;
-        res.json(slot);
-    } else {
-        res.status(404).json({ message: 'Not found' });
-    }
+router.put('/:id', (req, res) => {
+  const station = state.evStations.find((item) => item.id === req.params.id);
+  if (!station) {
+    return res.status(404).json({ message: 'Station not found' });
+  }
+
+  const allowed = ['Available', 'Occupied', 'Maintenance'];
+  if (req.body.status && allowed.includes(req.body.status)) {
+    station.status = req.body.status;
+  }
+
+  if (station.status === 'Available') {
+    station.currentBooking = null;
+  } else if (typeof req.body.currentBooking === 'string') {
+    station.currentBooking = req.body.currentBooking;
+  }
+
+  return res.json(station);
+});
+
+router.post('/reset', (req, res) => {
+  state.evStations.forEach((item) => {
+    item.status = 'Available';
+    item.currentBooking = null;
+  });
+  res.json({ message: 'All stations reset', stations: state.evStations });
 });
 
 module.exports = router;

@@ -1,47 +1,247 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, SafeAreaView } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, SafeAreaView, Alert, TextInput } from 'react-native';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 import { colors, typography, spacing } from '../theme/Theme';
 import Card from '../components/Card';
 import Button from '../components/Button';
+import Badge from '../components/Badge';
+import {
+  blockUnauthorizedEntry,
+  decideVisitorPass,
+  getCCTVFeeds,
+  getVisitorEntryLogs,
+  getVisitorPasses,
+  verifyVisitorPass
+} from '../services/apiService';
 
 const SecurityScreen = () => {
-    return (
-        <SafeAreaView style={styles.container}>
-            <ScrollView contentContainerStyle={styles.scroll}>
-                <Text style={styles.pageTitle}>Security Operations</Text>
+  const [permission, requestPermission] = useCameraPermissions();
+  const [scannerVisible, setScannerVisible] = useState(false);
+  const [scanLock, setScanLock] = useState(false);
+  const [cameras, setCameras] = useState([]);
+  const [activeCameraId, setActiveCameraId] = useState(null);
+  const [passes, setPasses] = useState([]);
+  const [entryLogs, setEntryLogs] = useState([]);
+  const [scanned, setScanned] = useState(null);
+  const [manualToken, setManualToken] = useState('');
 
-                <Card style={styles.camCard}>
-                    <View style={styles.camFeed}>
-                        <Text style={styles.camText}>Main Gate CCTV Feed</Text>
-                        <Text style={styles.camTextSignal}>Live 🔴</Text>
-                    </View>
-                    <View style={styles.camControls}>
-                        <Button title="Open Gate" variant="outline" style={{ flex: 1, marginRight: 5 }} onPress={() => { }} />
-                        <Button title="Sound Alarm" style={{ flex: 1, marginLeft: 5, backgroundColor: colors.error }} onPress={() => { }} />
-                    </View>
-                </Card>
+  const activeCamera = useMemo(
+    () => cameras.find((cam) => cam.id === activeCameraId) || cameras[0],
+    [cameras, activeCameraId]
+  );
 
-                <Text style={styles.sectionTitle}>Visitor Verification</Text>
-                <Card style={styles.verifyCard}>
-                    <Text style={{ textAlign: 'center', marginBottom: 15 }}>Scan Guest QR code from their mobile device to grant entry.</Text>
-                    <Button title="Open Camera Scanner" onPress={() => { }} />
-                </Card>
-            </ScrollView>
-        </SafeAreaView>
-    );
+  const loadData = async () => {
+    try {
+      const [feeds, passData, logs] = await Promise.all([
+        getCCTVFeeds(),
+        getVisitorPasses(),
+        getVisitorEntryLogs()
+      ]);
+      setCameras(feeds);
+      setActiveCameraId(feeds[0]?.id || null);
+      setPasses(passData);
+      setEntryLogs(logs);
+    } catch (error) {
+      Alert.alert('Error', 'Unable to load security dashboard data.');
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const openScanner = async () => {
+    if (!permission?.granted) {
+      const response = await requestPermission();
+      if (!response.granted) {
+        Alert.alert('Camera required', 'Please allow camera permission for QR scanning.');
+        return;
+      }
+    }
+    setScannerVisible(true);
+  };
+
+  const blockToken = async (token, reason) => {
+    const value = String(token || '').trim();
+    if (!value) {
+      Alert.alert('Token required', 'Provide a token to block unauthorized entry.');
+      return;
+    }
+    try {
+      await blockUnauthorizedEntry(value, reason);
+      setManualToken('');
+      setScanned(null);
+      loadData();
+    } catch (error) {
+      Alert.alert('Error', 'Unable to block entry token.');
+    }
+  };
+
+  const onBarcodeScanned = async ({ data }) => {
+    if (scanLock) return;
+    setScanLock(true);
+    const token = String(data || '').trim();
+
+    try {
+      const result = await verifyVisitorPass(token);
+      setScanned(result.pass);
+    } catch (error) {
+      const message = error?.response?.data?.message || 'Invalid or blocked visitor token.';
+      Alert.alert('Scan Result', message);
+      setScanned({ passToken: token, status: 'Unauthorized' });
+    } finally {
+      setTimeout(() => setScanLock(false), 1200);
+      loadData();
+    }
+  };
+
+  const decideEntry = async (decision) => {
+    if (!scanned?.id) return;
+    try {
+      await decideVisitorPass(scanned.id, decision);
+      Alert.alert('Access Control', decision === 'approve' ? 'Entry approved' : 'Entry denied');
+      setScanned(null);
+      loadData();
+    } catch (error) {
+      Alert.alert('Error', 'Unable to apply access decision.');
+    }
+  };
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <ScrollView contentContainerStyle={styles.scroll}>
+        <Text style={styles.pageTitle}>Security Control Panel</Text>
+
+        <Card style={styles.card}>
+          <Text style={styles.sectionTitle}>CCTV Monitoring</Text>
+          <View style={styles.grid}>
+            {cameras.map((camera) => (
+              <Card key={camera.id} style={[styles.camThumb, activeCamera?.id === camera.id && styles.camSelected]} onPress={() => setActiveCameraId(camera.id)}>
+                <View style={styles.mockFeed}><Text style={styles.mockText}>{camera.area}</Text></View>
+                <View style={styles.rowBetween}>
+                  <Text style={styles.cameraId}>{camera.id}</Text>
+                  <Badge text={camera.status} status={camera.status === 'Online' ? 'success' : 'error'} />
+                </View>
+              </Card>
+            ))}
+          </View>
+
+          {activeCamera && (
+            <View style={styles.detailView}>
+              <Text style={styles.detailTitle}>Detailed View: {activeCamera.area}</Text>
+              <View style={styles.detailFeed}>
+                <Text style={styles.mockTextLarge}>{activeCamera.id} LIVE FEED</Text>
+              </View>
+            </View>
+          )}
+        </Card>
+
+        <Card style={styles.card}>
+          <Text style={styles.sectionTitle}>Visitor Verification (QR Scan)</Text>
+          {!scannerVisible ? (
+            <Button title="Open Camera Scanner" onPress={openScanner} />
+          ) : (
+            <>
+              <View style={styles.cameraWrap}>
+                <CameraView style={styles.camera} facing="back" barcodeScannerSettings={{ barcodeTypes: ['qr'] }} onBarcodeScanned={onBarcodeScanned} />
+              </View>
+              <Button title="Close Scanner" variant="outline" onPress={() => setScannerVisible(false)} />
+            </>
+          )}
+
+          <TextInput
+            style={styles.input}
+            placeholder="Manual token for unauthorized block"
+            value={manualToken}
+            onChangeText={setManualToken}
+          />
+          <Button title="Block Unauthorized Entry" variant="outline" onPress={() => blockToken(manualToken, 'Blocked by security operator')} />
+
+          {scanned && (
+            <View style={styles.scanCard}>
+              <Text style={styles.scanTitle}>Scanned Token: {scanned.passToken}</Text>
+              <Text style={styles.scanMeta}>Visitor: {scanned.visitorName || 'Unknown'}</Text>
+              <Text style={styles.scanMeta}>Location: {scanned.tower || '-'} {scanned.flat || ''}</Text>
+              <Badge text={scanned.status || 'Scanned'} status={scanned.status === 'Unauthorized' ? 'error' : 'warning'} />
+              {scanned.id ? (
+                <View style={styles.actionRow}>
+                  <Button title="Approve Entry" style={styles.actionBtn} onPress={() => decideEntry('approve')} />
+                  <Button title="Deny Entry" variant="outline" style={styles.actionBtn} onPress={() => decideEntry('reject')} />
+                </View>
+              ) : (
+                <Button title="Block This Token" variant="outline" onPress={() => blockToken(scanned.passToken, 'Unauthorized scan')} />
+              )}
+            </View>
+          )}
+        </Card>
+
+        <Card style={styles.card}>
+          <Text style={styles.sectionTitle}>Access Control Logs</Text>
+          {entryLogs.slice(0, 10).map((log) => (
+            <View key={log.id} style={styles.logRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.logTitle}>{log.visitorName || log.token}</Text>
+                <Text style={styles.logText}>{log.reason}</Text>
+              </View>
+              <Badge
+                text={log.status}
+                status={log.status === 'Verified' ? 'success' : log.status === 'Blocked' || log.status === 'Unauthorized' || log.status === 'Rejected' ? 'error' : 'warning'}
+              />
+            </View>
+          ))}
+        </Card>
+
+        <Card style={styles.card}>
+          <Text style={styles.sectionTitle}>Pre-Registered Guests</Text>
+          {passes.slice(0, 6).map((pass) => (
+            <View key={pass.id} style={styles.logRow}>
+              <Text style={styles.logTitle}>{pass.visitorName} ({pass.tower}-{pass.flat})</Text>
+              <Badge text={pass.status} status={pass.status === 'Verified' ? 'success' : pass.status === 'Rejected' ? 'error' : 'warning'} />
+            </View>
+          ))}
+        </Card>
+      </ScrollView>
+    </SafeAreaView>
+  );
 };
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: colors.background },
-    scroll: { padding: spacing.lg },
-    pageTitle: { ...typography.header, color: colors.primary, marginBottom: spacing.lg },
-    camCard: { marginBottom: spacing.xl },
-    camFeed: { height: 180, backgroundColor: '#000', borderRadius: 8, justifyContent: 'space-between', padding: 10 },
-    camText: { color: '#FFF', fontWeight: 'bold' },
-    camTextSignal: { color: 'red', fontWeight: 'bold', alignSelf: 'flex-end' },
-    camControls: { flexDirection: 'row', marginTop: spacing.md },
-    sectionTitle: { ...typography.title, marginBottom: spacing.md },
-    verifyCard: { padding: spacing.xl }
+  container: { flex: 1, backgroundColor: colors.background },
+  scroll: { padding: spacing.lg },
+  pageTitle: { ...typography.header, color: colors.primary, marginBottom: spacing.lg },
+  card: { marginBottom: spacing.lg },
+  sectionTitle: { ...typography.title, marginBottom: spacing.md },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
+  camThumb: { width: '48%', marginBottom: spacing.sm, padding: spacing.sm },
+  camSelected: { borderWidth: 1, borderColor: colors.primary },
+  mockFeed: { height: 80, backgroundColor: '#0E1520', borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
+  mockText: { color: '#D8E2EE', fontSize: 12, fontWeight: 'bold' },
+  rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.sm },
+  cameraId: { ...typography.caption, fontWeight: 'bold' },
+  detailView: { marginTop: spacing.md },
+  detailTitle: { ...typography.body, marginBottom: spacing.sm, fontWeight: 'bold' },
+  detailFeed: { height: 170, borderRadius: 10, backgroundColor: '#111A27', justifyContent: 'center', alignItems: 'center' },
+  mockTextLarge: { color: '#D8E2EE', fontWeight: 'bold', fontSize: 16 },
+  cameraWrap: { height: 260, overflow: 'hidden', borderRadius: 12, marginBottom: spacing.md },
+  camera: { flex: 1 },
+  input: {
+    borderWidth: 1,
+    borderColor: '#D7E1E8',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginTop: spacing.sm,
+    marginBottom: spacing.sm,
+    backgroundColor: colors.surface
+  },
+  scanCard: { marginTop: spacing.md, padding: spacing.sm, backgroundColor: '#EEF3F7', borderRadius: 10 },
+  scanTitle: { ...typography.body, fontWeight: 'bold' },
+  scanMeta: { ...typography.caption, marginTop: 3 },
+  actionRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: spacing.sm },
+  actionBtn: { width: '48%' },
+  logRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.sm },
+  logTitle: { ...typography.body, fontWeight: 'bold' },
+  logText: { ...typography.caption }
 });
 
 export default SecurityScreen;

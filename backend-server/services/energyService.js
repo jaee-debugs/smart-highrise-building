@@ -1,10 +1,20 @@
-const energyData = require('../data/energyData.json');
 const EnergyModel = require('../models/energyModel');
+const state = require('../data/state');
 
 const getEnergyData = async () => {
-    // Replace this mock data with IoT sensor data here
-    // Example: fetch from ESP32 / Firebase / MQTT
-    return new EnergyModel(energyData.steps, energyData.energyGenerated, energyData.greenPoints);
+    return {
+        overview: {
+            ...new EnergyModel(
+                state.energy.dailyTrend.reduce((acc, item) => acc + item.generated, 0),
+                `${state.energy.totalPiezoEnergyKwh} kWh`,
+                state.energy.greenPoints
+            ),
+            totalPiezoEnergyKwh: state.energy.totalPiezoEnergyKwh
+        },
+        towerConsumptionKwh: state.energy.towerConsumptionKwh,
+        dailyTrend: state.energy.dailyTrend,
+        monthlyTrend: state.energy.monthlyTrend
+    };
 };
 
 module.exports = {

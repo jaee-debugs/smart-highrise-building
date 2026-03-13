@@ -3,10 +3,11 @@ import { View, Text, StyleSheet } from 'react-native';
 import { colors, spacing } from '../theme/Theme';
 
 const Badge = ({ text, status = 'default', style }) => {
+    const normalized = String(status).toLowerCase();
     let backgroundColor = colors.primary;
-    if (status === 'success' || status === 'available') backgroundColor = colors.success;
-    if (status === 'warning' || status === 'pending' || status === 'charging') backgroundColor = colors.warning;
-    if (status === 'error' || status === 'occupied' || status === 'booked') backgroundColor = colors.error;
+    if (normalized === 'success' || normalized === 'available' || normalized === 'normal' || normalized === 'verified' || normalized === 'healthy') backgroundColor = colors.success;
+    if (normalized === 'warning' || normalized === 'pending' || normalized === 'charging' || normalized === 'occupied' || normalized === 'low') backgroundColor = colors.warning;
+    if (normalized === 'error' || normalized === 'booked' || normalized === 'critical' || normalized === 'disabled' || normalized === 'alert' || normalized === 'rejected') backgroundColor = colors.error;
 
     return (
         <View style={[styles.badge, { backgroundColor }, style]}>

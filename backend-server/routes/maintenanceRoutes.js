@@ -1,37 +1,40 @@
 const express = require('express');
 const router = express.Router();
-
-let complaints = [
-    { id: 1, issue: 'Leaking Pipe', location: 'Tower A 101', status: 'Pending', reportedOn: '2023-10-26' },
-    { id: 2, issue: 'Elevator sound', location: 'Tower B Lift 1', status: 'Resolved', reportedOn: '2023-10-25' }
-];
+const state = require('../data/state');
 
 router.get('/', (req, res) => {
-    res.json(complaints);
+  res.json(state.maintenanceRequests);
 });
 
 router.post('/', (req, res) => {
-    const newComplaint = {
-        id: complaints.length + 1,
-        ...req.body,
-        status: 'Pending',
-        reportedOn: new Date().toISOString().split('T')[0]
-    };
-    complaints.push(newComplaint);
-    res.status(201).json(newComplaint);
+  const newRequest = {
+    id: state.nextId(state.maintenanceRequests),
+    issue: req.body.issue,
+    location: req.body.location,
+    requestedBy: req.body.requestedBy || 'Resident',
+    status: 'Pending',
+    reportedOn: new Date().toISOString().split('T')[0]
+  };
+  state.maintenanceRequests.unshift(newRequest);
+  res.status(201).json(newRequest);
 });
 
 router.put('/:id', (req, res) => {
-    const { id } = req.params;
-    const { status, vendor } = req.body;
-    let complaint = complaints.find(c => c.id == id);
-    if (complaint) {
-        complaint.status = status;
-        if (vendor) complaint.vendor = vendor;
-        res.json(complaint);
-    } else {
-        res.status(404).json({ message: 'Not found' });
-    }
+  const request = state.maintenanceRequests.find((item) => item.id === Number(req.params.id));
+  if (!request) {
+    return res.status(404).json({ message: 'Maintenance request not found' });
+  }
+
+  const allowed = ['Pending', 'In Progress', 'Resolved'];
+  if (req.body.status && allowed.includes(req.body.status)) {
+    request.status = req.body.status;
+  }
+
+  if (req.body.vendor) {
+    request.vendor = req.body.vendor;
+  }
+
+  return res.json(request);
 });
 
 module.exports = router;

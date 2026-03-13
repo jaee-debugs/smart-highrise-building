@@ -27,6 +27,7 @@ export default function AppNavigator() {
             <Stack.Screen name="Sustainability" component={require('../screens/SustainabilityScreen').default} options={{ title: 'Sustainability' }} />
             <Stack.Screen name="EVCharging" component={require('../screens/EVScreen').default} options={{ title: 'EV Charging' }} />
             <Stack.Screen name="Elevator" component={require('../screens/ElevatorScreen').default} options={{ title: 'Elevators' }} />
+            <Stack.Screen name="ResidentMaintenance" component={require('../screens/ResidentMaintenanceScreen').default} options={{ title: 'My Maintenance' }} />
 
             {/* Admin Screens */}
             <Stack.Screen name="AdminDashboard" component={AdminDashboard} options={{ title: 'Admin Console' }} />
