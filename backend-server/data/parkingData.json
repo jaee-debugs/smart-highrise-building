@@ -1,0 +1,14 @@
+[
+    {
+        "slotId": "A1",
+        "status": "occupied"
+    },
+    {
+        "slotId": "A2",
+        "status": "available"
+    },
+    {
+        "slotId": "A3",
+        "status": "available"
+    }
+]

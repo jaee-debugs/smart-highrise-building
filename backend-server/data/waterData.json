@@ -1,0 +1,10 @@
+[
+    {
+        "tower": "Tower A",
+        "tankLevel": 80
+    },
+    {
+        "tower": "Tower B",
+        "tankLevel": 60
+    }
+]
