@@ -110,5 +110,11 @@ export const getPublicLostFoundPosts = () =>
 export const closeLostFound = (id) =>
   request(() => api.put(`/community/lost-found/${id}/close`), 'Error closing lost & found post');
 
-export const getSustainabilityData = () =>
-  request(() => api.get('/sustainability'), 'Error fetching sustainability data');
+export const getSustainabilityData = (residentId = 'Resident-A101') =>
+  request(() => api.get(`/sustainability?residentId=${encodeURIComponent(residentId)}`), 'Error fetching sustainability data');
+
+export const addSustainabilitySteps = (residentId, steps) =>
+  request(() => api.post('/sustainability/add-steps', { residentId, steps }), 'Error updating sustainability steps');
+
+export const getSustainabilityLeaderboard = () =>
+  request(() => api.get('/sustainability/leaderboard'), 'Error fetching sustainability leaderboard');

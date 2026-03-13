@@ -7,8 +7,9 @@ import Badge from '../components/Badge';
 import { getEVStations, resetEVStations, updateEVStation } from '../services/apiService';
 
 const cycleStatus = (status) => {
-  if (status === 'Available') return 'Occupied';
-  if (status === 'Occupied') return 'Maintenance';
+  if (status === 'Available') return 'Booked';
+  if (status === 'Booked') return 'In Use';
+  if (status === 'In Use' || status === 'Occupied') return 'Maintenance';
   return 'Available';
 };
 
@@ -41,7 +42,7 @@ const AdminEVScreen = () => {
 
   const summary = {
     available: stations.filter((item) => item.status === 'Available').length,
-    occupied: stations.filter((item) => item.status === 'Occupied').length,
+    occupied: stations.filter((item) => item.status === 'In Use' || item.status === 'Occupied' || item.status === 'Booked').length,
     maintenance: stations.filter((item) => item.status === 'Maintenance').length,
   };
 
@@ -62,7 +63,7 @@ const AdminEVScreen = () => {
           <Card key={station.id} style={styles.card}>
             <View style={styles.row}>
               <Text style={styles.stationId}>{station.id}</Text>
-              <Badge text={station.status} status={station.status === 'Available' ? 'success' : station.status === 'Occupied' ? 'warning' : 'error'} />
+              <Badge text={station.status} status={station.status === 'Available' ? 'success' : station.status === 'Maintenance' ? 'error' : 'warning'} />
             </View>
             <Text style={styles.booking}>Current: {station.currentBooking || 'None'}</Text>
             <Button title="Change Status" onPress={() => onUpdateStatus(station)} />

@@ -14,7 +14,7 @@ router.post('/book', (req, res) => {
     return res.status(400).json({ message: 'Station not available' });
   }
 
-  station.status = 'Occupied';
+  station.status = 'Booked';
   station.currentBooking = user || 'Resident';
   return res.json({ message: 'Station booked', station });
 });
@@ -25,9 +25,9 @@ router.put('/:id', (req, res) => {
     return res.status(404).json({ message: 'Station not found' });
   }
 
-  const allowed = ['Available', 'Occupied', 'Maintenance'];
+  const allowed = ['Available', 'Booked', 'In Use', 'Occupied', 'Maintenance'];
   if (req.body.status && allowed.includes(req.body.status)) {
-    station.status = req.body.status;
+    station.status = req.body.status === 'Occupied' ? 'In Use' : req.body.status;
   }
 
   if (station.status === 'Available') {

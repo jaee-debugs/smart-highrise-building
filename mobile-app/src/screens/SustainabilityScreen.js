@@ -1,37 +1,83 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, SafeAreaView, Alert } from 'react-native';
 import { colors, typography, spacing } from '../theme/Theme';
 import Card from '../components/Card';
 import Button from '../components/Button';
-import { getSustainabilityData } from '../services/apiService';
+import { Pedometer } from 'expo-sensors';
+import { addSustainabilitySteps, getSustainabilityData } from '../services/apiService';
 
-const SustainabilityScreen = () => {
+const RESIDENT_ID = 'Resident-A101';
+
+const SustainabilityScreen = ({ navigation }) => {
     const [data, setData] = useState(null);
-    const [loading, setLoading] = useState(false);
+    const [syncing, setSyncing] = useState(false);
+    const [tracking, setTracking] = useState(false);
+    const [sessionSteps, setSessionSteps] = useState(0);
+    const [trackerSubscription, setTrackerSubscription] = useState(null);
+
+    const loadData = async () => {
+        try {
+            const res = await getSustainabilityData(RESIDENT_ID);
+            setData(res);
+        } catch (error) {
+            Alert.alert('Error', 'Unable to load your sustainability data.');
+        }
+    };
 
     useEffect(() => {
-        const fetchSusData = async () => {
-            try {
-                const res = await getSustainabilityData();
-                setData(res);
-            } catch (error) { }
-        };
-        fetchSusData();
-    }, []);
+        loadData();
 
-    const simulateWalking = () => {
-        setLoading(true);
-        setTimeout(() => {
-            if (data) {
-                setData({
-                    ...data,
-                    steps: data.steps + 500,
-                    energyGeneratedWh: (data.energyGeneratedWh + 7.5).toFixed(1),
-                    greenPoints: data.greenPoints + 10
-                });
+        return () => {
+            if (trackerSubscription) {
+                trackerSubscription.remove();
             }
-            setLoading(false);
-        }, 800);
+        };
+    }, [trackerSubscription]);
+
+    const startStepTracking = async () => {
+        const isAvailable = await Pedometer.isAvailableAsync();
+        if (!isAvailable) {
+            Alert.alert('Not Supported', 'Step counter is not available on this device.');
+            return;
+        }
+
+        if (trackerSubscription) {
+            trackerSubscription.remove();
+        }
+
+        setSessionSteps(0);
+        const subscription = Pedometer.watchStepCount((result) => {
+            setSessionSteps(result.steps);
+        });
+        setTrackerSubscription(subscription);
+        setTracking(true);
+    };
+
+    const stopStepTracking = () => {
+        if (trackerSubscription) {
+            trackerSubscription.remove();
+            setTrackerSubscription(null);
+        }
+        setTracking(false);
+    };
+
+    const syncSessionSteps = async () => {
+        if (sessionSteps <= 0) {
+            Alert.alert('No Steps', 'Walk a bit first, then sync your session.');
+            return;
+        }
+
+        try {
+            setSyncing(true);
+            const updated = await addSustainabilitySteps(RESIDENT_ID, sessionSteps);
+            setData(updated);
+            setSessionSteps(0);
+            stopStepTracking();
+        } catch (error) {
+            Alert.alert('Sync Failed', 'Could not sync your steps right now.');
+        } finally {
+            setSyncing(false);
+        }
     };
 
     return (
@@ -58,12 +104,25 @@ const SustainabilityScreen = () => {
                     <Text style={styles.cardHeader}>Green Points Score</Text>
                     <Text style={styles.scoreText}>{data ? data.greenPoints : 0}</Text>
                     <Text style={styles.rankText}>Leaderboard Rank: #{data ? data.leaderboardRank : '-'}</Text>
+                    <Text style={styles.sessionText}>Current Session Steps: {sessionSteps}</Text>
                     <Button
-                        title="Simulate Walk (+500 steps)"
-                        variant="primary"
-                        onPress={simulateWalking}
-                        loading={loading}
+                        title={tracking ? 'Stop Tracking' : 'Start Step Tracking'}
+                        variant={tracking ? 'secondary' : 'primary'}
+                        onPress={tracking ? stopStepTracking : startStepTracking}
                         style={{ marginTop: spacing.md }}
+                    />
+                    <Button
+                        title="Sync Session to Green Points"
+                        variant="outline"
+                        onPress={syncSessionSteps}
+                        loading={syncing}
+                        style={{ marginTop: spacing.sm }}
+                    />
+                    <Button
+                        title="View Leaderboard"
+                        variant="outline"
+                        onPress={() => navigation.navigate('Leaderboard')}
+                        style={{ marginTop: spacing.sm }}
                     />
                 </Card>
 
@@ -89,6 +148,7 @@ const styles = StyleSheet.create({
     cardHeader: { ...typography.title, marginBottom: spacing.sm },
     scoreText: { fontSize: 48, fontWeight: 'bold', color: colors.success, marginBottom: spacing.xs },
     rankText: { ...typography.body, color: colors.textLight },
+    sessionText: { ...typography.caption, marginTop: spacing.sm, color: colors.textLight },
     infoCard: { backgroundColor: colors.surface },
     infoTitle: { ...typography.title, color: colors.primary, marginBottom: spacing.sm },
     infoBody: { ...typography.body, color: colors.textDark, lineHeight: 22 }

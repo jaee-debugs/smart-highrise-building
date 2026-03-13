@@ -80,15 +80,27 @@ const SecurityScreen = () => {
   const onBarcodeScanned = async ({ data }) => {
     if (scanLock) return;
     setScanLock(true);
-    const token = String(data || '').trim();
+    const raw = String(data || '').trim();
+    let parsed = null;
+    try {
+      parsed = JSON.parse(raw);
+    } catch (error) {
+      parsed = null;
+    }
+    const token = String(parsed?.passToken || raw).trim();
 
     try {
       const result = await verifyVisitorPass(token);
       setScanned(result.pass);
+      Alert.alert('Entry Granted', `${result.pass.visitorName} • ${result.pass.tower}-${result.pass.flat}`);
     } catch (error) {
-      const message = error?.response?.data?.message || 'Invalid or blocked visitor token.';
-      Alert.alert('Scan Result', message);
-      setScanned({ passToken: token, status: 'Unauthorized' });
+      const payload = error?.response?.data || {};
+      Alert.alert('Entry Denied - Invalid QR Code');
+      if (payload.pass) {
+        setScanned(payload.pass);
+      } else {
+        setScanned({ passToken: token, status: 'Denied' });
+      }
     } finally {
       setTimeout(() => setScanLock(false), 1200);
       loadData();
@@ -159,14 +171,16 @@ const SecurityScreen = () => {
 
           {scanned && (
             <View style={styles.scanCard}>
-              <Text style={styles.scanTitle}>Scanned Token: {scanned.passToken}</Text>
+              <Text style={styles.scanTitle}>Scanned Token: {scanned.passToken || '-'}</Text>
+              <Text style={styles.scanMeta}>Visitor ID: {scanned.visitorId || '-'}</Text>
               <Text style={styles.scanMeta}>Visitor: {scanned.visitorName || 'Unknown'}</Text>
               <Text style={styles.scanMeta}>Location: {scanned.tower || '-'} {scanned.flat || ''}</Text>
-              <Badge text={scanned.status || 'Scanned'} status={scanned.status === 'Unauthorized' ? 'error' : 'warning'} />
+              <Text style={styles.scanMeta}>Visit Time: {scanned.visitTime || '-'}</Text>
+              <Badge text={scanned.status || 'Scanned'} status={scanned.status === 'Checked In' ? 'success' : scanned.status === 'Denied' || scanned.status === 'Rejected' || scanned.status === 'Expired' ? 'error' : 'warning'} />
               {scanned.id ? (
                 <View style={styles.actionRow}>
-                  <Button title="Approve Entry" style={styles.actionBtn} onPress={() => decideEntry('approve')} />
-                  <Button title="Deny Entry" variant="outline" style={styles.actionBtn} onPress={() => decideEntry('reject')} />
+                  <Button title="Manual Approve" style={styles.actionBtn} onPress={() => decideEntry('approve')} />
+                  <Button title="Manual Deny" variant="outline" style={styles.actionBtn} onPress={() => decideEntry('reject')} />
                 </View>
               ) : (
                 <Button title="Block This Token" variant="outline" onPress={() => blockToken(scanned.passToken, 'Unauthorized scan')} />

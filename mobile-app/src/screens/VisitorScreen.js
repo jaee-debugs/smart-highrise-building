@@ -11,6 +11,9 @@ const VisitorScreen = () => {
   const [visitors, setVisitors] = useState([]);
   const [passes, setPasses] = useState([]);
   const [name, setName] = useState('Family Guest');
+  const [tower, setTower] = useState('Tower A');
+  const [flat, setFlat] = useState('101');
+  const [visitTime, setVisitTime] = useState(new Date(Date.now() + 15 * 60 * 1000).toISOString());
 
   const loadData = async () => {
     try {
@@ -27,13 +30,24 @@ const VisitorScreen = () => {
   }, []);
 
   const onGenerate = async () => {
-    await createVisitorPass({
-      visitorName: name,
-      tower: 'Tower A',
-      flat: '101',
-      validUntil: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString()
-    });
-    loadData();
+    if (!name.trim() || !tower.trim() || !flat.trim()) {
+      Alert.alert('Required', 'Please provide visitor, tower and flat details.');
+      return;
+    }
+
+    try {
+      await createVisitorPass({
+        visitorName: name.trim(),
+        tower: tower.trim(),
+        flat: flat.trim(),
+        visitTime,
+        validUntil: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
+        createdBy: 'Resident-A101'
+      });
+      loadData();
+    } catch (error) {
+      Alert.alert('Error', 'Unable to generate visitor pass.');
+    }
   };
 
   const latestPass = passes[0];
@@ -58,14 +72,34 @@ const VisitorScreen = () => {
         <Card style={styles.qrCard}>
           <Text style={styles.qrHeader}>Create Visitor Pass</Text>
           <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="Visitor name" />
+          <View style={styles.inlineRow}>
+            <TextInput style={[styles.input, styles.halfInput]} value={tower} onChangeText={setTower} placeholder="Tower" />
+            <TextInput style={[styles.input, styles.halfInput]} value={flat} onChangeText={setFlat} placeholder="Flat" />
+          </View>
+          <TextInput style={styles.input} value={visitTime} onChangeText={setVisitTime} placeholder="Visit time (ISO)" />
           <Button title="Generate QR Pass" onPress={onGenerate} />
 
           {latestPass && (
             <View style={styles.qrBox}>
-              <QRCode value={latestPass.passToken} size={140} />
-              <Text style={styles.token}>{latestPass.passToken}</Text>
+              <QRCode value={latestPass.qrPayload || latestPass.passToken} size={140} />
+              <Text style={styles.token}>Visitor ID: {latestPass.visitorId}</Text>
+              <Text style={styles.token}>Status: {latestPass.status}</Text>
+              <Text style={styles.token}>Valid Until: {latestPass.validUntil}</Text>
             </View>
           )}
+        </Card>
+
+        <Card style={styles.qrCard}>
+          <Text style={styles.qrHeader}>My Visitor Passes</Text>
+          {passes.slice(0, 8).map((pass) => (
+            <View key={pass.id} style={styles.passRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.passLabel}>{pass.visitorName} • {pass.tower}-{pass.flat}</Text>
+                <Text style={styles.token}>{pass.visitorId}</Text>
+              </View>
+              <Badge text={pass.status} status={pass.status === 'Checked In' ? 'success' : pass.status === 'Rejected' || pass.status === 'Expired' ? 'error' : 'warning'} />
+            </View>
+          ))}
         </Card>
       </ScrollView>
     </SafeAreaView>
@@ -91,8 +125,12 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     marginBottom: spacing.sm
   },
+  inlineRow: { flexDirection: 'row', justifyContent: 'space-between' },
+  halfInput: { width: '48%' },
   qrBox: { marginTop: spacing.md, alignItems: 'center' },
   token: { ...typography.caption, marginTop: spacing.sm }
+  ,passRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.sm },
+  passLabel: { ...typography.body, fontWeight: 'bold' }
 });
 
 export default VisitorScreen;

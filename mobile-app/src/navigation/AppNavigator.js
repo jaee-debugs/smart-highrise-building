@@ -10,6 +10,7 @@ import EnergyScreen from '../screens/EnergyScreen';
 import VisitorScreen from '../screens/VisitorScreen';
 import CommunityScreen from '../screens/CommunityScreen';
 import IndoorNavigationScreen from '../screens/IndoorNavigationScreen';
+import LeaderboardScreen from '../screens/LeaderboardScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -25,6 +26,7 @@ export default function AppNavigator() {
             <Stack.Screen name="Community" component={CommunityScreen} options={{ title: 'Community' }} />
             <Stack.Screen name="IndoorNavigation" component={IndoorNavigationScreen} options={{ title: 'Indoor Map' }} />
             <Stack.Screen name="Sustainability" component={require('../screens/SustainabilityScreen').default} options={{ title: 'Sustainability' }} />
+            <Stack.Screen name="Leaderboard" component={LeaderboardScreen} options={{ title: 'Leaderboard' }} />
             <Stack.Screen name="EVCharging" component={require('../screens/EVScreen').default} options={{ title: 'EV Charging' }} />
             <Stack.Screen name="Elevator" component={require('../screens/ElevatorScreen').default} options={{ title: 'Elevators' }} />
             <Stack.Screen name="ResidentMaintenance" component={require('../screens/ResidentMaintenanceScreen').default} options={{ title: 'My Maintenance' }} />

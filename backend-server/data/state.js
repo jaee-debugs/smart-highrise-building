@@ -56,8 +56,15 @@ const parkingSlots = [
 
 const evStations = [
   { id: 'EV1', status: 'Available', currentBooking: null },
-  { id: 'EV2', status: 'Occupied', currentBooking: 'Resident-A101' },
+  { id: 'EV2', status: 'In Use', currentBooking: 'Resident-A101' },
   { id: 'EV3', status: 'Maintenance', currentBooking: null }
+];
+
+const sustainabilityResidents = [
+  { residentId: 'Resident-A101', name: 'Resident A101', steps: 8450, energyGeneratedWh: 120.5, greenPoints: 340 },
+  { residentId: 'Resident-B204', name: 'Resident B204', steps: 7920, energyGeneratedWh: 113.8, greenPoints: 316 },
+  { residentId: 'Resident-C309', name: 'Resident C309', steps: 6760, energyGeneratedWh: 98.2, greenPoints: 271 },
+  { residentId: 'Resident-A508', name: 'Resident A508', steps: 6250, energyGeneratedWh: 90.1, greenPoints: 251 }
 ];
 
 const community = {
@@ -147,6 +154,7 @@ module.exports = {
   infra,
   parkingSlots,
   evStations,
+  sustainabilityResidents,
   community,
   visitors,
   visitorPasses,
