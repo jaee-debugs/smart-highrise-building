@@ -1,10 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
-import { colors, typography, spacing } from '../theme/Theme';
-import Card from '../components/Card';
-import Badge from '../components/Badge';
+import { colors, spacing } from '../theme/Theme';
 import Button from '../components/Button';
+import { MatteScreen, MattePanel } from '../components/MatteScaffold';
 import { createVisitorPass, getVisitorPasses, getVisitors } from '../services/apiService';
 
 const VisitorScreen = () => {
@@ -53,31 +52,31 @@ const VisitorScreen = () => {
   const latestPass = passes[0];
 
   return (
-    <SafeAreaView style={styles.container}>
+    <MatteScreen>
       <ScrollView contentContainerStyle={styles.scroll}>
         <View style={styles.headerRow}>
           <Text style={styles.pageTitle}>Visitors Log</Text>
         </View>
 
         {visitors.map((visitor) => (
-          <Card key={visitor.id} style={styles.visitorCard}>
+          <MattePanel key={visitor.id} style={styles.visitorCard}>
             <View style={styles.vInfo}>
               <Text style={styles.vName}>{visitor.name}</Text>
               <Text style={styles.vType}>{visitor.type} • {visitor.time || '--:--'}</Text>
             </View>
-            <Badge text={visitor.status} status={visitor.status === 'Entered' ? 'success' : 'pending'} />
-          </Card>
+            <View style={[styles.statusPill, visitor.status === 'Entered' ? styles.successPill : styles.warningPill]}><Text style={styles.statusText}>{visitor.status}</Text></View>
+          </MattePanel>
         ))}
 
-        <Card style={styles.qrCard}>
+        <MattePanel style={styles.qrCard}>
           <Text style={styles.qrHeader}>Create Visitor Pass</Text>
-          <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="Visitor name" />
+          <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="Visitor name" placeholderTextColor="rgba(236,244,250,0.62)" />
           <View style={styles.inlineRow}>
-            <TextInput style={[styles.input, styles.halfInput]} value={tower} onChangeText={setTower} placeholder="Tower" />
-            <TextInput style={[styles.input, styles.halfInput]} value={flat} onChangeText={setFlat} placeholder="Flat" />
+            <TextInput style={[styles.input, styles.halfInput]} value={tower} onChangeText={setTower} placeholder="Tower" placeholderTextColor="rgba(236,244,250,0.62)" />
+            <TextInput style={[styles.input, styles.halfInput]} value={flat} onChangeText={setFlat} placeholder="Flat" placeholderTextColor="rgba(236,244,250,0.62)" />
           </View>
-          <TextInput style={styles.input} value={visitTime} onChangeText={setVisitTime} placeholder="Visit time (ISO)" />
-          <Button title="Generate QR Pass" onPress={onGenerate} />
+          <TextInput style={styles.input} value={visitTime} onChangeText={setVisitTime} placeholder="Visit time (ISO)" placeholderTextColor="rgba(236,244,250,0.62)" />
+          <Button title="Generate QR Pass" onPress={onGenerate} style={styles.anchorButton} textStyle={styles.actionText} />
 
           {latestPass && (
             <View style={styles.qrBox}>
@@ -87,9 +86,9 @@ const VisitorScreen = () => {
               <Text style={styles.token}>Valid Until: {latestPass.validUntil}</Text>
             </View>
           )}
-        </Card>
+        </MattePanel>
 
-        <Card style={styles.qrCard}>
+        <MattePanel style={styles.qrCard}>
           <Text style={styles.qrHeader}>My Visitor Passes</Text>
           {passes.slice(0, 8).map((pass) => (
             <View key={pass.id} style={styles.passRow}>
@@ -97,40 +96,47 @@ const VisitorScreen = () => {
                 <Text style={styles.passLabel}>{pass.visitorName} • {pass.tower}-{pass.flat}</Text>
                 <Text style={styles.token}>{pass.visitorId}</Text>
               </View>
-              <Badge text={pass.status} status={pass.status === 'Checked In' ? 'success' : pass.status === 'Rejected' || pass.status === 'Expired' ? 'error' : 'warning'} />
+              <View style={[styles.statusPill, pass.status === 'Checked In' ? styles.successPill : pass.status === 'Rejected' || pass.status === 'Expired' ? styles.errorPill : styles.warningPill]}><Text style={styles.statusText}>{pass.status}</Text></View>
             </View>
           ))}
-        </Card>
+        </MattePanel>
       </ScrollView>
-    </SafeAreaView>
+    </MatteScreen>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
   scroll: { padding: spacing.lg },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.lg },
-  pageTitle: { ...typography.header, color: colors.primary },
-  visitorCard: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: spacing.lg },
-  vName: { ...typography.title },
-  vType: { ...typography.body, color: colors.textLight },
+  pageTitle: { fontSize: 28, fontWeight: '700', color: '#F4F8FB' },
+  visitorCard: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: spacing.lg, marginBottom: 12 },
+  vName: { fontSize: 18, fontWeight: '700', color: '#FFFFFF' },
+  vType: { fontSize: 14, color: 'rgba(236,244,250,0.72)' },
   qrCard: { marginTop: spacing.xl, padding: spacing.xl },
-  qrHeader: { ...typography.title, textAlign: 'center', marginBottom: spacing.md },
+  qrHeader: { fontSize: 20, fontWeight: '700', textAlign: 'center', marginBottom: spacing.md, color: '#F4F8FB' },
   input: {
     borderWidth: 1,
-    borderColor: '#D6E0E8',
-    backgroundColor: colors.surface,
+    borderColor: 'rgba(255,255,255,0.12)',
+    backgroundColor: 'rgba(255,255,255,0.04)',
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    marginBottom: spacing.sm
+    marginBottom: spacing.sm,
+    color: '#FFFFFF'
   },
   inlineRow: { flexDirection: 'row', justifyContent: 'space-between' },
   halfInput: { width: '48%' },
   qrBox: { marginTop: spacing.md, alignItems: 'center' },
-  token: { ...typography.caption, marginTop: spacing.sm }
-  ,passRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.sm },
-  passLabel: { ...typography.body, fontWeight: 'bold' }
+  token: { fontSize: 12, marginTop: spacing.sm, color: 'rgba(236,244,250,0.72)' },
+  passRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.06)' },
+  passLabel: { fontSize: 14, fontWeight: '700', color: '#FFFFFF' },
+  anchorButton: { backgroundColor: '#11283A', borderColor: 'rgba(255,255,255,0.1)', shadowOpacity: 0, elevation: 0 },
+  actionText: { color: '#FFFFFF' },
+  statusPill: { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5 },
+  successPill: { backgroundColor: '#2D6A4F' },
+  warningPill: { backgroundColor: '#8A6A23' },
+  errorPill: { backgroundColor: '#9B2226' },
+  statusText: { color: '#FFFFFF', fontSize: 11, fontWeight: '700', letterSpacing: 0.4 }
 });
 
 export default VisitorScreen;

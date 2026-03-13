@@ -1,10 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Alert, Platform } from 'react-native';
 import { Audio } from 'expo-av';
-import { colors, typography, spacing } from '../theme/Theme';
-import Card from '../components/Card';
-import Badge from '../components/Badge';
-import Button from '../components/Button';
+import { spacing } from '../theme/Theme';
+import { AdminActionButton, AdminPanel, AdminPill, AdminScreen, LivePanel, SegmentedBar, StatusLED, adminColors } from '../components/AdminScaffold';
 import { getEmergencyEvents, getInfraStatus, resolveEmergency } from '../services/apiService';
 
 const AdminDashboard = ({ navigation }) => {
@@ -13,14 +11,14 @@ const AdminDashboard = ({ navigation }) => {
   const latestEmergencyId = useRef(0);
 
   const features = [
-    { id: 1, title: 'Water Infra', icon: '💧', route: 'WaterMonitoring' },
-    { id: 2, title: 'Energy Analytics', icon: '⚡', route: 'Energy' },
-    { id: 3, title: 'Infra Monitor', icon: '🏢', route: 'InfraMonitor' },
-    { id: 4, title: 'Security Control', icon: '🛡️', route: 'Security' },
-    { id: 5, title: 'Maintenance', icon: '🔧', route: 'Maintenance' },
-    { id: 6, title: 'Manage Community', icon: '📢', route: 'AdminCommunity' },
-    { id: 7, title: 'Manage EV Slots', icon: '🔋', route: 'AdminEV' },
-    { id: 8, title: 'Manage Parking', icon: '🚗', route: 'AdminParking' },
+    { id: 1, title: 'Water Infra', icon: 'WT', route: 'WaterMonitoring' },
+    { id: 2, title: 'Energy Analytics', icon: 'EN', route: 'Energy' },
+    { id: 3, title: 'Infra Monitor', icon: 'IF', route: 'InfraMonitor' },
+    { id: 4, title: 'Security Control', icon: 'SC', route: 'Security' },
+    { id: 5, title: 'Maintenance', icon: 'MT', route: 'Maintenance' },
+    { id: 6, title: 'Manage Community', icon: 'CM', route: 'AdminCommunity' },
+    { id: 7, title: 'Manage EV Slots', icon: 'EV', route: 'AdminEV' },
+    { id: 8, title: 'Manage Parking', icon: 'PK', route: 'AdminParking' },
   ];
 
   const playAlarm = async () => {
@@ -81,7 +79,7 @@ const AdminDashboard = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <AdminScreen>
       <ScrollView contentContainerStyle={styles.scroll}>
         <View style={styles.header}>
           <Text style={styles.greeting}>Admin Console</Text>
@@ -89,7 +87,7 @@ const AdminDashboard = ({ navigation }) => {
         </View>
 
         {infra && (
-          <Card style={styles.statsCard}>
+          <LivePanel style={styles.statsCard}>
             <Text style={styles.statsTitle}>Live Infrastructure</Text>
             <View style={styles.statsRow}>
               <View>
@@ -102,14 +100,15 @@ const AdminDashboard = ({ navigation }) => {
               </View>
               <View>
                 <Text style={styles.statLabel}>Generator</Text>
-                <Badge text={infra.generator.status} status={infra.generator.status === 'Running' ? 'warning' : 'success'} />
+                <View style={styles.liveRow}><StatusLED online={infra.generator.status !== 'Running'} /><AdminPill text={infra.generator.status} tone={infra.generator.status === 'Running' ? 'warning' : 'success'} /></View>
               </View>
             </View>
-          </Card>
+            <SegmentedBar value={100 - infra.water.summary.critical * 10} tone="success" />
+          </LivePanel>
         )}
 
         <Text style={styles.sectionTitle}>Emergency SOS Feed</Text>
-        <Card>
+        <AdminPanel style={styles.panel}>
           {emergencies.length === 0 && <Text style={styles.empty}>No active emergencies</Text>}
           {emergencies.map((event) => (
             <View key={event.id} style={styles.alertRow}>
@@ -118,48 +117,54 @@ const AdminDashboard = ({ navigation }) => {
                 <Text style={styles.alertText}>Location: {event.location}</Text>
               </View>
               {event.resolved ? (
-                <Badge text="Resolved" status="success" />
+                <AdminPill text="Resolved" tone="success" />
               ) : (
-                <Button title="Resolve" onPress={() => markResolved(event.id)} style={{ paddingHorizontal: 12, paddingVertical: 8 }} />
+                <AdminActionButton title="Resolve" onPress={() => markResolved(event.id)} style={styles.smallAction} />
               )}
             </View>
           ))}
-        </Card>
+        </AdminPanel>
 
         <Text style={styles.sectionTitle}>Management Modules</Text>
         <View style={styles.grid}>
           {features.map((item) => (
-            <Card key={item.id} style={styles.gridItem} onPress={() => navigation.navigate(item.route)}>
-              <Text style={styles.icon}>{item.icon}</Text>
-              <Text style={styles.itemTitle}>{item.title}</Text>
-            </Card>
+            <AdminPanel key={item.id} style={styles.gridItem} onPress={() => navigation.navigate(item.route)}>
+              <Text style={styles.modulePress}>
+                <Text style={styles.icon}>{item.icon}</Text>
+                {'\n'}
+                <Text style={styles.itemTitle}>{item.title}</Text>
+              </Text>
+            </AdminPanel>
           ))}
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </AdminScreen>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
   scroll: { padding: spacing.lg },
   header: { marginBottom: spacing.lg },
-  greeting: { ...typography.header, color: colors.primary },
-  subtext: { ...typography.body, color: colors.success, marginTop: spacing.xs, fontWeight: 'bold' },
-  statsCard: { backgroundColor: colors.primary, marginBottom: spacing.lg },
-  statsTitle: { color: colors.white, fontSize: 16, fontWeight: 'bold', marginBottom: spacing.md },
+  greeting: { fontSize: 30, fontWeight: '800', color: adminColors.text },
+  subtext: { fontSize: 14, color: adminColors.commandGreen, marginTop: spacing.xs, fontWeight: '700' },
+  statsCard: { marginBottom: spacing.lg },
+  statsTitle: { color: adminColors.text, fontSize: 16, fontWeight: '700', marginBottom: spacing.md },
   statsRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  statLabel: { color: colors.surface, fontSize: 12, opacity: 0.8 },
-  statValue: { color: colors.white, fontSize: 18, fontWeight: 'bold' },
-  sectionTitle: { ...typography.title, marginBottom: spacing.md },
-  empty: { ...typography.caption },
-  alertRow: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm },
-  alertTitle: { ...typography.body, fontWeight: 'bold' },
-  alertText: { ...typography.caption },
+  statLabel: { color: adminColors.subtext, fontSize: 12, marginBottom: 4 },
+  statValue: { color: adminColors.text, fontSize: 20, fontWeight: '700', fontFamily: Platform.select({ ios: 'Courier', android: 'monospace', web: 'monospace' }) },
+  sectionTitle: { fontSize: 20, fontWeight: '700', color: adminColors.text, marginBottom: spacing.md },
+  panel: { padding: spacing.md },
+  empty: { color: adminColors.subtext, fontSize: 12 },
+  alertRow: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.06)', paddingBottom: spacing.sm },
+  alertTitle: { color: adminColors.text, fontSize: 14, fontWeight: '700' },
+  alertText: { color: adminColors.subtext, fontSize: 12 },
+  liveRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  smallAction: { minWidth: 94 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
-  gridItem: { width: '48%', alignItems: 'center', paddingVertical: spacing.xl },
-  icon: { fontSize: 32, marginBottom: spacing.sm },
-  itemTitle: { ...typography.body, fontWeight: 'bold', textAlign: 'center' }
+  gridItem: { width: '48%', paddingVertical: spacing.xl, marginBottom: spacing.md },
+  modulePress: { textAlign: 'center', color: adminColors.text },
+  icon: { fontSize: 22, fontWeight: '700', color: adminColors.commandGreen },
+  itemTitle: { fontSize: 14, fontWeight: '700', textAlign: 'center', color: adminColors.text, lineHeight: 20 }
 });
 
 export default AdminDashboard;

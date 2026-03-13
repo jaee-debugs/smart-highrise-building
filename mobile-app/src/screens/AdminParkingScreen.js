@@ -1,9 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { colors, spacing, typography } from '../theme/Theme';
-import Card from '../components/Card';
-import Button from '../components/Button';
-import Badge from '../components/Badge';
+import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { spacing } from '../theme/Theme';
+import { AdminActionButton, AdminPill, AdminScreen, AdminPanel, adminColors } from '../components/AdminScaffold';
 import { getParkingStatus, updateParkingStatus } from '../services/apiService';
 
 const nextStatus = (status) => {
@@ -34,34 +32,30 @@ const AdminParkingScreen = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <AdminScreen>
       <ScrollView contentContainerStyle={styles.scroll}>
         <Text style={styles.pageTitle}>Parking Manager</Text>
         <View style={styles.grid}>
           {slots.map((slot) => (
-            <Card key={slot.slotId} style={styles.slotCard}>
+            <AdminPanel key={slot.slotId} style={styles.slotCard}>
               <Text style={styles.slotId}>{slot.slotId}</Text>
-              <Badge
-                text={slot.status}
-                status={slot.status === 'Available' ? 'success' : slot.status === 'Occupied' ? 'warning' : 'error'}
-              />
-              <Button title="Update" variant="outline" style={styles.btn} onPress={() => onUpdateSlot(slot)} />
-            </Card>
+              <AdminPill text={slot.status} tone={slot.status === 'Available' ? 'success' : slot.status === 'Occupied' ? 'warning' : 'error'} />
+              <AdminActionButton title="Update" variant="outline" style={styles.btn} onPress={() => onUpdateSlot(slot)} />
+            </AdminPanel>
           ))}
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </AdminScreen>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
   scroll: { padding: spacing.lg },
-  pageTitle: { ...typography.header, color: colors.primary, marginBottom: spacing.lg },
+  pageTitle: { fontSize: 28, fontWeight: '800', color: adminColors.text, marginBottom: spacing.lg },
   grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
   slotCard: { width: '48%', alignItems: 'center', marginBottom: spacing.md },
-  slotId: { ...typography.title, marginBottom: spacing.sm },
-  btn: { paddingVertical: 8, marginTop: spacing.sm }
+  slotId: { fontSize: 18, fontWeight: '700', color: adminColors.text, marginBottom: spacing.sm },
+  btn: { marginTop: spacing.sm, width: '100%' }
 });
 
 export default AdminParkingScreen;

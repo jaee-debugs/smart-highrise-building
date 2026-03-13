@@ -1,9 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { colors, spacing, typography } from '../theme/Theme';
-import Card from '../components/Card';
-import Button from '../components/Button';
-import Badge from '../components/Badge';
+import { spacing } from '../theme/Theme';
+import { AdminActionButton, AdminPanel, AdminPill, AdminScreen, adminColors } from '../components/AdminScaffold';
 import {
   approveLostFound,
   closeLostFound,
@@ -117,35 +115,37 @@ const AdminCommunityScreen = () => {
   };
 
   return (
+    <AdminScreen>
     <ScrollView style={styles.container} contentContainerStyle={styles.scroll}>
       <Text style={styles.pageTitle}>Community Management</Text>
 
-      <Card style={styles.card}>
+      <AdminPanel style={styles.card}>
         <Text style={styles.sectionTitle}>Add Notice</Text>
-        <TextInput style={styles.input} placeholder="Notice title" value={noticeTitle} onChangeText={setNoticeTitle} />
-        <TextInput style={[styles.input, styles.textArea]} placeholder="Notice details" value={noticeBody} onChangeText={setNoticeBody} multiline />
-        <Button title="Publish Notice" onPress={onCreateNotice} />
-      </Card>
+        <TextInput style={styles.input} placeholder="Notice title" placeholderTextColor="rgba(225,236,247,0.5)" value={noticeTitle} onChangeText={setNoticeTitle} />
+        <TextInput style={[styles.input, styles.textArea]} placeholder="Notice details" placeholderTextColor="rgba(225,236,247,0.5)" value={noticeBody} onChangeText={setNoticeBody} multiline />
+        <AdminActionButton title="Publish Notice" onPress={onCreateNotice} />
+      </AdminPanel>
 
-      <Card style={styles.card}>
+      <AdminPanel style={styles.card}>
         <Text style={styles.sectionTitle}>Create Poll</Text>
-        <TextInput style={styles.input} placeholder="Poll title" value={pollTitle} onChangeText={setPollTitle} />
+        <TextInput style={styles.input} placeholder="Poll title" placeholderTextColor="rgba(225,236,247,0.5)" value={pollTitle} onChangeText={setPollTitle} />
         {pollOptions.map((option, index) => (
           <View key={`poll-option-${index}`} style={styles.optionRow}>
             <TextInput
               style={[styles.input, styles.optionInput]}
               placeholder={`Option ${index + 1}`}
+              placeholderTextColor="rgba(225,236,247,0.5)"
               value={option}
               onChangeText={(value) => updatePollOption(index, value)}
             />
-            <Button title="Remove" variant="outline" style={styles.optionButton} onPress={() => removePollOption(index)} />
+            <AdminActionButton title="Remove" variant="outline" style={styles.optionButton} onPress={() => removePollOption(index)} />
           </View>
         ))}
-        <Button title="+ Add Option" variant="outline" onPress={addPollOption} />
-        <Button title="Create Poll" onPress={onCreatePoll} />
-      </Card>
+        <AdminActionButton title="+ Add Option" variant="outline" onPress={addPollOption} />
+        <AdminActionButton title="Create Poll" onPress={onCreatePoll} />
+      </AdminPanel>
 
-      <Card style={styles.card}>
+      <AdminPanel style={styles.card}>
         <Text style={styles.sectionTitle}>Live Poll Results</Text>
         {community.polls.length === 0 && <Text style={styles.lostDesc}>No polls yet.</Text>}
         {community.polls.map((poll) => {
@@ -156,7 +156,7 @@ const AdminCommunityScreen = () => {
             <View key={poll.id} style={styles.resultBlock}>
               <View style={styles.resultHead}>
                 <Text style={styles.resultTitle}>{poll.title}</Text>
-                <Badge text={`${totalVotes} Votes`} status="success" />
+                <AdminPill text={`${totalVotes} Votes`} tone="success" />
               </View>
 
               {poll.options.map((option) => {
@@ -176,17 +176,17 @@ const AdminCommunityScreen = () => {
             </View>
           );
         })}
-      </Card>
+      </AdminPanel>
 
-      <Card style={styles.card}>
+      <AdminPanel style={styles.card}>
         <Text style={styles.sectionTitle}>Create Event</Text>
-        <TextInput style={styles.input} placeholder="Event title" value={eventTitle} onChangeText={setEventTitle} />
-        <TextInput style={styles.input} placeholder="YYYY-MM-DD" value={eventDate} onChangeText={setEventDate} />
-        <TextInput style={styles.input} placeholder="Location" value={eventLocation} onChangeText={setEventLocation} />
-        <Button title="Create Event" onPress={onCreateEvent} />
-      </Card>
+        <TextInput style={styles.input} placeholder="Event title" placeholderTextColor="rgba(225,236,247,0.5)" value={eventTitle} onChangeText={setEventTitle} />
+        <TextInput style={styles.input} placeholder="YYYY-MM-DD" placeholderTextColor="rgba(225,236,247,0.5)" value={eventDate} onChangeText={setEventDate} />
+        <TextInput style={styles.input} placeholder="Location" placeholderTextColor="rgba(225,236,247,0.5)" value={eventLocation} onChangeText={setEventLocation} />
+        <AdminActionButton title="Create Event" onPress={onCreateEvent} />
+      </AdminPanel>
 
-      <Card style={styles.card}>
+      <AdminPanel style={styles.card}>
         <Text style={styles.sectionTitle}>Lost & Found Moderation</Text>
         {community.lostFound.map((item) => (
           <View key={item.id} style={styles.lostRow}>
@@ -196,41 +196,42 @@ const AdminCommunityScreen = () => {
               <Text style={styles.lostDesc}>Posted by: {item.createdBy || 'Resident'}</Text>
             </View>
             <View style={styles.lostActions}>
-              <Badge text={item.status} status={item.status === 'Approved' ? 'success' : item.status === 'Closed' ? 'error' : 'warning'} />
-              {item.status === 'PendingApproval' && <Button title="Approve" style={styles.smallBtn} onPress={() => onApproveLostFound(item.id)} />}
-              {item.status === 'Approved' && <Button title="Close" variant="outline" style={styles.smallBtn} onPress={() => onCloseLostFound(item.id)} />}
-              <Button title="Remove" variant="outline" style={styles.smallBtn} onPress={() => onRemoveLostFound(item.id)} />
+              <AdminPill text={item.status} tone={item.status === 'Approved' ? 'success' : item.status === 'Closed' ? 'error' : 'warning'} />
+              {item.status === 'PendingApproval' && <AdminActionButton title="Approve" style={styles.smallBtn} onPress={() => onApproveLostFound(item.id)} />}
+              {item.status === 'Approved' && <AdminActionButton title="Close" variant="outline" style={styles.smallBtn} onPress={() => onCloseLostFound(item.id)} />}
+              <AdminActionButton title="Remove" variant="outline" style={styles.smallBtn} onPress={() => onRemoveLostFound(item.id)} />
             </View>
           </View>
         ))}
-      </Card>
+      </AdminPanel>
     </ScrollView>
+    </AdminScreen>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
+  container: { flex: 1, backgroundColor: 'transparent' },
   scroll: { padding: spacing.lg },
-  pageTitle: { ...typography.header, color: colors.primary, marginBottom: spacing.lg },
+  pageTitle: { fontSize: 28, fontWeight: '800', color: adminColors.text, marginBottom: spacing.lg },
   card: { marginBottom: spacing.lg },
-  sectionTitle: { ...typography.title, marginBottom: spacing.sm },
-  input: { borderWidth: 1, borderColor: '#D6E0E8', backgroundColor: colors.surface, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, marginBottom: spacing.sm },
+  sectionTitle: { fontSize: 18, fontWeight: '700', marginBottom: spacing.sm, color: adminColors.text },
+  input: { borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', backgroundColor: '#09131D', color: adminColors.text, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, marginBottom: spacing.sm },
   optionRow: { flexDirection: 'row', alignItems: 'center' },
   optionInput: { flex: 1, marginRight: spacing.sm },
-  optionButton: { paddingVertical: 8 },
-  resultBlock: { borderBottomWidth: 1, borderBottomColor: '#E7EEF4', paddingBottom: spacing.sm, marginBottom: spacing.sm },
+  optionButton: { minWidth: 86 },
+  resultBlock: { borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.06)', paddingBottom: spacing.sm, marginBottom: spacing.sm },
   resultHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.xs },
-  resultTitle: { ...typography.body, fontWeight: 'bold' },
+  resultTitle: { color: adminColors.text, fontSize: 14, fontWeight: '700' },
   resultOption: { marginTop: spacing.xs },
   resultLabelRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  resultBarBg: { marginTop: 4, height: 8, borderRadius: 6, backgroundColor: '#E0E0E0', overflow: 'hidden' },
-  resultBarFill: { height: '100%', backgroundColor: colors.primary },
+  resultBarBg: { marginTop: 4, height: 8, borderRadius: 6, backgroundColor: 'rgba(255,255,255,0.1)', overflow: 'hidden' },
+  resultBarFill: { height: '100%', backgroundColor: '#11283A' },
   textArea: { minHeight: 80, textAlignVertical: 'top' },
-  lostRow: { marginBottom: spacing.md, borderBottomWidth: 1, borderBottomColor: '#E7EEF4', paddingBottom: spacing.sm },
+  lostRow: { marginBottom: spacing.md, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.06)', paddingBottom: spacing.sm },
   lostActions: { marginTop: spacing.xs },
-  lostTitle: { ...typography.body, fontWeight: 'bold' },
-  lostDesc: { ...typography.caption, marginBottom: spacing.xs },
-  smallBtn: { paddingVertical: 8 }
+  lostTitle: { color: adminColors.text, fontSize: 14, fontWeight: '700' },
+  lostDesc: { color: adminColors.subtext, fontSize: 12, marginBottom: spacing.xs },
+  smallBtn: { marginTop: spacing.xs }
 });
 
 export default AdminCommunityScreen;

@@ -1,20 +1,18 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, ScrollView, Alert } from 'react-native';
-import { colors, spacing, typography } from '../theme/Theme';
-import Card from '../components/Card';
+import { View, Text, StyleSheet, ActivityIndicator, ScrollView, Alert, Platform } from 'react-native';
+import { colors, spacing } from '../theme/Theme';
+import { AdminPanel, AdminScreen, LivePanel, SegmentedBar, adminColors } from '../components/AdminScaffold';
 import { getEnergyData } from '../services/apiService';
 
-const Bar = ({ label, value, maxValue, color = colors.primary }) => {
-  const width = `${Math.round((value / Math.max(maxValue, 1)) * 100)}%`;
+const Bar = ({ label, value, maxValue, tone = 'success' }) => {
+  const percent = Math.round((value / Math.max(maxValue, 1)) * 100);
   return (
     <View style={styles.barWrap}>
       <View style={styles.barLabelRow}>
         <Text style={styles.barLabel}>{label}</Text>
         <Text style={styles.barValue}>{value}</Text>
       </View>
-      <View style={styles.barBg}>
-        <View style={[styles.barFill, { width, backgroundColor: color }]} />
-      </View>
+      <SegmentedBar value={percent} tone={tone} />
     </View>
   );
 };
@@ -39,7 +37,7 @@ const EnergyScreen = () => {
   }, []);
 
   if (loading) {
-    return <ActivityIndicator style={styles.center} size="large" color={colors.primary} />;
+    return <ActivityIndicator style={styles.center} size="large" color={colors.white} />;
   }
 
   if (!energyData) {
@@ -50,21 +48,22 @@ const EnergyScreen = () => {
   const monthlyMax = Math.max(...energyData.monthlyTrend.map((item) => item.consumed));
 
   return (
+    <AdminScreen>
     <ScrollView style={styles.container} contentContainerStyle={styles.scroll}>
       <Text style={styles.title}>Energy Analytics Dashboard</Text>
 
       <View style={styles.summaryRow}>
-        <Card style={styles.summaryCard}>
+        <AdminPanel style={styles.summaryCard}>
           <Text style={styles.summaryLabel}>Piezo Energy (Total)</Text>
           <Text style={styles.summaryValue}>{energyData.overview.totalPiezoEnergyKwh} kWh</Text>
-        </Card>
-        <Card style={styles.summaryCard}>
+        </AdminPanel>
+        <AdminPanel style={styles.summaryCard}>
           <Text style={styles.summaryLabel}>Green Points</Text>
           <Text style={styles.summaryValue}>{energyData.overview.greenPoints}</Text>
-        </Card>
+        </AdminPanel>
       </View>
 
-      <Card>
+      <LivePanel style={styles.panel}>
         <Text style={styles.sectionTitle}>Tower-wise Consumption (kWh)</Text>
         {energyData.towerConsumptionKwh.map((item) => (
           <Bar
@@ -72,46 +71,47 @@ const EnergyScreen = () => {
             label={item.tower}
             value={item.value}
             maxValue={Math.max(...energyData.towerConsumptionKwh.map((t) => t.value))}
+            tone="success"
           />
         ))}
-      </Card>
+      </LivePanel>
 
-      <Card>
+      <AdminPanel style={styles.panel}>
         <Text style={styles.sectionTitle}>Daily Trend (Generated vs Consumed)</Text>
         {energyData.dailyTrend.map((item) => (
           <View key={item.day} style={{ marginBottom: spacing.md }}>
-            <Bar label={`${item.day} Generated`} value={item.generated} maxValue={dailyMax} color={colors.success} />
-            <Bar label={`${item.day} Consumed`} value={item.consumed} maxValue={dailyMax} color={colors.error} />
+            <Bar label={`${item.day} Generated`} value={item.generated} maxValue={dailyMax} tone="success" />
+            <Bar label={`${item.day} Consumed`} value={item.consumed} maxValue={dailyMax} tone="error" />
           </View>
         ))}
-      </Card>
+      </AdminPanel>
 
-      <Card>
+      <AdminPanel style={styles.panel}>
         <Text style={styles.sectionTitle}>Monthly Trend</Text>
         {energyData.monthlyTrend.map((item) => (
-          <Bar key={item.month} label={item.month} value={item.generated} maxValue={monthlyMax} color={colors.accent} />
+          <Bar key={item.month} label={item.month} value={item.generated} maxValue={monthlyMax} tone="warning" />
         ))}
-      </Card>
+      </AdminPanel>
     </ScrollView>
+    </AdminScreen>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
+  container: { flex: 1, backgroundColor: 'transparent' },
   scroll: { padding: spacing.md },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  title: { ...typography.header, color: colors.primary, marginBottom: spacing.md },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#030912' },
+  title: { fontSize: 28, fontWeight: '800', color: adminColors.text, marginBottom: spacing.md },
   summaryRow: { flexDirection: 'row', justifyContent: 'space-between' },
   summaryCard: { width: '48%' },
-  summaryLabel: { ...typography.caption },
-  summaryValue: { ...typography.title, marginTop: spacing.xs, color: colors.textDark },
-  sectionTitle: { ...typography.title, marginBottom: spacing.sm },
+  summaryLabel: { fontSize: 12, color: adminColors.subtext },
+  summaryValue: { fontSize: 20, marginTop: spacing.xs, color: adminColors.text, fontWeight: '700', fontFamily: Platform.select({ ios: 'Courier', android: 'monospace', web: 'monospace' }) },
+  sectionTitle: { fontSize: 18, marginBottom: spacing.sm, color: adminColors.text, fontWeight: '700' },
+  panel: { marginTop: spacing.md },
   barWrap: { marginBottom: spacing.sm },
   barLabelRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  barLabel: { ...typography.caption, color: colors.textDark },
-  barValue: { ...typography.caption, fontWeight: 'bold' },
-  barBg: { backgroundColor: '#E5EDF3', height: 12, borderRadius: 10, marginTop: 4 },
-  barFill: { height: '100%', borderRadius: 10 }
+  barLabel: { fontSize: 12, color: adminColors.subtext },
+  barValue: { fontSize: 12, fontWeight: '700', color: adminColors.text, fontFamily: Platform.select({ ios: 'Courier', android: 'monospace', web: 'monospace' }) },
 });
 
 export default EnergyScreen;

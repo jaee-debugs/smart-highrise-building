@@ -1,10 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, Alert, TextInput } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Alert, TextInput } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import { colors, typography, spacing } from '../theme/Theme';
-import Card from '../components/Card';
-import Button from '../components/Button';
-import Badge from '../components/Badge';
+import { spacing } from '../theme/Theme';
+import { AdminActionButton, AdminPanel, AdminPill, AdminScreen, LivePanel, StatusLED, adminColors } from '../components/AdminScaffold';
 import {
   blockUnauthorizedEntry,
   decideVisitorPass,
@@ -120,21 +118,21 @@ const SecurityScreen = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <AdminScreen>
       <ScrollView contentContainerStyle={styles.scroll}>
         <Text style={styles.pageTitle}>Security Control Panel</Text>
 
-        <Card style={styles.card}>
+        <LivePanel style={styles.card}>
           <Text style={styles.sectionTitle}>CCTV Monitoring</Text>
           <View style={styles.grid}>
             {cameras.map((camera) => (
-              <Card key={camera.id} style={[styles.camThumb, activeCamera?.id === camera.id && styles.camSelected]} onPress={() => setActiveCameraId(camera.id)}>
+              <AdminPanel key={camera.id} style={[styles.camThumb, activeCamera?.id === camera.id && styles.camSelected]} onPress={() => setActiveCameraId(camera.id)}>
                 <View style={styles.mockFeed}><Text style={styles.mockText}>{camera.area}</Text></View>
                 <View style={styles.rowBetween}>
-                  <Text style={styles.cameraId}>{camera.id}</Text>
-                  <Badge text={camera.status} status={camera.status === 'Online' ? 'success' : 'error'} />
+                  <View style={styles.cameraMeta}><StatusLED online={camera.status === 'Online'} /><Text style={styles.cameraId}>{camera.id}</Text></View>
+                  <Text style={styles.cameraStatus}>{camera.status}</Text>
                 </View>
-              </Card>
+              </AdminPanel>
             ))}
           </View>
 
@@ -146,28 +144,31 @@ const SecurityScreen = () => {
               </View>
             </View>
           )}
-        </Card>
+        </LivePanel>
 
-        <Card style={styles.card}>
+        <AdminPanel style={styles.card}>
           <Text style={styles.sectionTitle}>Visitor Verification (QR Scan)</Text>
           {!scannerVisible ? (
-            <Button title="Open Camera Scanner" onPress={openScanner} />
+            <AdminActionButton title="Open Camera Scanner" onPress={openScanner} />
           ) : (
             <>
               <View style={styles.cameraWrap}>
                 <CameraView style={styles.camera} facing="back" barcodeScannerSettings={{ barcodeTypes: ['qr'] }} onBarcodeScanned={onBarcodeScanned} />
               </View>
-              <Button title="Close Scanner" variant="outline" onPress={() => setScannerVisible(false)} />
+              <AdminActionButton title="Close Scanner" variant="outline" onPress={() => setScannerVisible(false)} />
             </>
           )}
 
           <TextInput
             style={styles.input}
             placeholder="Manual token for unauthorized block"
+            placeholderTextColor="rgba(225,236,247,0.5)"
             value={manualToken}
             onChangeText={setManualToken}
           />
-          <Button title="Block Unauthorized Entry" variant="outline" onPress={() => blockToken(manualToken, 'Blocked by security operator')} />
+          <View style={styles.actionTray}>
+            <AdminActionButton title="Block Unauthorized Entry" variant="outline" onPress={() => blockToken(manualToken, 'Blocked by security operator')} />
+          </View>
 
           {scanned && (
             <View style={styles.scanCard}>
@@ -176,20 +177,20 @@ const SecurityScreen = () => {
               <Text style={styles.scanMeta}>Visitor: {scanned.visitorName || 'Unknown'}</Text>
               <Text style={styles.scanMeta}>Location: {scanned.tower || '-'} {scanned.flat || ''}</Text>
               <Text style={styles.scanMeta}>Visit Time: {scanned.visitTime || '-'}</Text>
-              <Badge text={scanned.status || 'Scanned'} status={scanned.status === 'Checked In' ? 'success' : scanned.status === 'Denied' || scanned.status === 'Rejected' || scanned.status === 'Expired' ? 'error' : 'warning'} />
+              <AdminPill text={scanned.status || 'Scanned'} tone={scanned.status === 'Checked In' ? 'success' : scanned.status === 'Denied' || scanned.status === 'Rejected' || scanned.status === 'Expired' ? 'error' : 'warning'} />
               {scanned.id ? (
                 <View style={styles.actionRow}>
-                  <Button title="Manual Approve" style={styles.actionBtn} onPress={() => decideEntry('approve')} />
-                  <Button title="Manual Deny" variant="outline" style={styles.actionBtn} onPress={() => decideEntry('reject')} />
+                  <AdminActionButton title="Manual Approve" style={styles.actionBtn} onPress={() => decideEntry('approve')} />
+                  <AdminActionButton title="Manual Deny" variant="outline" style={styles.actionBtn} onPress={() => decideEntry('reject')} />
                 </View>
               ) : (
-                <Button title="Block This Token" variant="outline" onPress={() => blockToken(scanned.passToken, 'Unauthorized scan')} />
+                <AdminActionButton title="Block This Token" variant="outline" onPress={() => blockToken(scanned.passToken, 'Unauthorized scan')} />
               )}
             </View>
           )}
-        </Card>
+        </AdminPanel>
 
-        <Card style={styles.card}>
+        <AdminPanel style={styles.card}>
           <Text style={styles.sectionTitle}>Access Control Logs</Text>
           {entryLogs.slice(0, 10).map((log) => (
             <View key={log.id} style={styles.logRow}>
@@ -197,65 +198,65 @@ const SecurityScreen = () => {
                 <Text style={styles.logTitle}>{log.visitorName || log.token}</Text>
                 <Text style={styles.logText}>{log.reason}</Text>
               </View>
-              <Badge
-                text={log.status}
-                status={log.status === 'Verified' ? 'success' : log.status === 'Blocked' || log.status === 'Unauthorized' || log.status === 'Rejected' ? 'error' : 'warning'}
-              />
+              <AdminPill text={log.status} tone={log.status === 'Verified' ? 'success' : log.status === 'Blocked' || log.status === 'Unauthorized' || log.status === 'Rejected' ? 'error' : 'warning'} />
             </View>
           ))}
-        </Card>
+        </AdminPanel>
 
-        <Card style={styles.card}>
+        <AdminPanel style={styles.card}>
           <Text style={styles.sectionTitle}>Pre-Registered Guests</Text>
           {passes.slice(0, 6).map((pass) => (
             <View key={pass.id} style={styles.logRow}>
               <Text style={styles.logTitle}>{pass.visitorName} ({pass.tower}-{pass.flat})</Text>
-              <Badge text={pass.status} status={pass.status === 'Verified' ? 'success' : pass.status === 'Rejected' ? 'error' : 'warning'} />
+              <AdminPill text={pass.status} tone={pass.status === 'Verified' ? 'success' : pass.status === 'Rejected' ? 'error' : 'warning'} />
             </View>
           ))}
-        </Card>
+        </AdminPanel>
       </ScrollView>
-    </SafeAreaView>
+    </AdminScreen>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
   scroll: { padding: spacing.lg },
-  pageTitle: { ...typography.header, color: colors.primary, marginBottom: spacing.lg },
+  pageTitle: { fontSize: 28, fontWeight: '800', color: adminColors.text, marginBottom: spacing.lg },
   card: { marginBottom: spacing.lg },
-  sectionTitle: { ...typography.title, marginBottom: spacing.md },
+  sectionTitle: { fontSize: 18, fontWeight: '700', marginBottom: spacing.md, color: adminColors.text },
   grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
   camThumb: { width: '48%', marginBottom: spacing.sm, padding: spacing.sm },
-  camSelected: { borderWidth: 1, borderColor: colors.primary },
-  mockFeed: { height: 80, backgroundColor: '#0E1520', borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
+  camSelected: { borderWidth: 1, borderColor: 'rgba(0,255,65,0.35)' },
+  mockFeed: { height: 80, backgroundColor: '#0A1118', borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
   mockText: { color: '#D8E2EE', fontSize: 12, fontWeight: 'bold' },
   rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.sm },
-  cameraId: { ...typography.caption, fontWeight: 'bold' },
+  cameraMeta: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  cameraId: { color: adminColors.text, fontSize: 12, fontWeight: '700' },
+  cameraStatus: { color: adminColors.subtext, fontSize: 12 },
   detailView: { marginTop: spacing.md },
-  detailTitle: { ...typography.body, marginBottom: spacing.sm, fontWeight: 'bold' },
-  detailFeed: { height: 170, borderRadius: 10, backgroundColor: '#111A27', justifyContent: 'center', alignItems: 'center' },
+  detailTitle: { color: adminColors.text, marginBottom: spacing.sm, fontWeight: '700', fontSize: 14 },
+  detailFeed: { height: 170, borderRadius: 10, backgroundColor: '#0D131A', justifyContent: 'center', alignItems: 'center' },
   mockTextLarge: { color: '#D8E2EE', fontWeight: 'bold', fontSize: 16 },
   cameraWrap: { height: 260, overflow: 'hidden', borderRadius: 12, marginBottom: spacing.md },
   camera: { flex: 1 },
   input: {
     borderWidth: 1,
-    borderColor: '#D7E1E8',
+    borderColor: 'rgba(255,255,255,0.08)',
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
     marginTop: spacing.sm,
     marginBottom: spacing.sm,
-    backgroundColor: colors.surface
+    backgroundColor: '#09131D',
+    color: adminColors.text,
   },
-  scanCard: { marginTop: spacing.md, padding: spacing.sm, backgroundColor: '#EEF3F7', borderRadius: 10 },
-  scanTitle: { ...typography.body, fontWeight: 'bold' },
-  scanMeta: { ...typography.caption, marginTop: 3 },
+  actionTray: { marginTop: spacing.sm, padding: spacing.md, borderRadius: 14, backgroundColor: '#08131D' },
+  scanCard: { marginTop: spacing.md, padding: spacing.sm, backgroundColor: '#0A141E', borderRadius: 10 },
+  scanTitle: { color: adminColors.text, fontWeight: '700', fontSize: 14 },
+  scanMeta: { color: adminColors.subtext, fontSize: 12, marginTop: 3 },
   actionRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: spacing.sm },
   actionBtn: { width: '48%' },
   logRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.sm },
-  logTitle: { ...typography.body, fontWeight: 'bold' },
-  logText: { ...typography.caption }
+  logTitle: { color: adminColors.text, fontSize: 14, fontWeight: '700' },
+  logText: { color: adminColors.subtext, fontSize: 12 }
 });
 
 export default SecurityScreen;

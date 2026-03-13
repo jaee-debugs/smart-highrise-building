@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, Alert } from 'react-native';
-import { colors, typography, spacing } from '../theme/Theme';
-import Card from '../components/Card';
+import { View, Text, StyleSheet, ScrollView, Alert } from 'react-native';
+import { spacing } from '../theme/Theme';
 import Button from '../components/Button';
 import { Pedometer } from 'expo-sensors';
+import { MatteScreen, MattePanel } from '../components/MatteScaffold';
 import { addSustainabilitySteps, getSustainabilityData } from '../services/apiService';
 
 const RESIDENT_ID = 'Resident-A101';
@@ -81,26 +81,26 @@ const SustainabilityScreen = ({ navigation }) => {
     };
 
     return (
-        <SafeAreaView style={styles.container}>
+        <MatteScreen>
             <ScrollView contentContainerStyle={styles.scroll}>
                 <Text style={styles.pageTitle}>My Impact</Text>
 
                 {data && (
                     <View style={styles.grid}>
-                        <Card style={styles.statCard}>
-                            <Text style={styles.icon}>👣</Text>
+                        <MattePanel style={styles.statCard}>
+                            <Text style={styles.icon}>ST</Text>
                             <Text style={styles.statLabel}>Steps Today</Text>
                             <Text style={styles.statValue}>{data.steps}</Text>
-                        </Card>
-                        <Card style={styles.statCard}>
-                            <Text style={styles.icon}>🔋</Text>
+                        </MattePanel>
+                        <MattePanel style={styles.statCard}>
+                            <Text style={styles.icon}>EG</Text>
                             <Text style={styles.statLabel}>Energy Gen</Text>
                             <Text style={styles.statValue}>{data.energyGeneratedWh} Wh</Text>
-                        </Card>
+                        </MattePanel>
                     </View>
                 )}
 
-                <Card style={styles.mainCard}>
+                <MattePanel style={styles.mainCard}>
                     <Text style={styles.cardHeader}>Green Points Score</Text>
                     <Text style={styles.scoreText}>{data ? data.greenPoints : 0}</Text>
                     <Text style={styles.rankText}>Leaderboard Rank: #{data ? data.leaderboardRank : '-'}</Text>
@@ -109,49 +109,54 @@ const SustainabilityScreen = ({ navigation }) => {
                         title={tracking ? 'Stop Tracking' : 'Start Step Tracking'}
                         variant={tracking ? 'secondary' : 'primary'}
                         onPress={tracking ? stopStepTracking : startStepTracking}
-                        style={{ marginTop: spacing.md }}
+                        style={styles.primaryButton}
+                        textStyle={styles.actionText}
                     />
                     <Button
                         title="Sync Session to Green Points"
                         variant="outline"
                         onPress={syncSessionSteps}
                         loading={syncing}
-                        style={{ marginTop: spacing.sm }}
+                        style={styles.secondaryButton}
+                        textStyle={styles.actionText}
                     />
                     <Button
                         title="View Leaderboard"
                         variant="outline"
                         onPress={() => navigation.navigate('Leaderboard')}
-                        style={{ marginTop: spacing.sm }}
+                        style={styles.secondaryButton}
+                        textStyle={styles.actionText}
                     />
-                </Card>
+                </MattePanel>
 
-                <Card style={styles.infoCard}>
+                <MattePanel style={styles.infoCard}>
                     <Text style={styles.infoTitle}>How it works?</Text>
                     <Text style={styles.infoBody}>By walking in smart-tiled areas inside the building, kinetic energy is converted into electricity. The more you walk, the more power you feed into the building grid, earning you Green Points which can be redeemed against maintenance bills!</Text>
-                </Card>
+                </MattePanel>
             </ScrollView>
-        </SafeAreaView>
+        </MatteScreen>
     );
 };
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: colors.background },
     scroll: { padding: spacing.lg },
-    pageTitle: { ...typography.header, color: colors.primary, marginBottom: spacing.lg },
+    pageTitle: { fontSize: 28, fontWeight: '700', color: '#F4F8FB', marginBottom: spacing.lg },
     grid: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: spacing.md },
     statCard: { width: '48%', alignItems: 'center' },
-    icon: { fontSize: 32, marginBottom: spacing.xs },
-    statLabel: { ...typography.caption, fontWeight: 'bold' },
-    statValue: { ...typography.title, color: colors.accent, marginTop: spacing.xs },
+    icon: { fontSize: 18, marginBottom: spacing.xs, color: '#F4F8FB', fontWeight: '700' },
+    statLabel: { fontSize: 12, fontWeight: '700', color: 'rgba(236,244,250,0.72)' },
+    statValue: { fontSize: 18, fontWeight: '700', color: '#2D6A4F', marginTop: spacing.xs },
     mainCard: { alignItems: 'center', marginBottom: spacing.md },
-    cardHeader: { ...typography.title, marginBottom: spacing.sm },
-    scoreText: { fontSize: 48, fontWeight: 'bold', color: colors.success, marginBottom: spacing.xs },
-    rankText: { ...typography.body, color: colors.textLight },
-    sessionText: { ...typography.caption, marginTop: spacing.sm, color: colors.textLight },
-    infoCard: { backgroundColor: colors.surface },
-    infoTitle: { ...typography.title, color: colors.primary, marginBottom: spacing.sm },
-    infoBody: { ...typography.body, color: colors.textDark, lineHeight: 22 }
+    cardHeader: { fontSize: 20, fontWeight: '700', marginBottom: spacing.sm, color: '#F4F8FB' },
+    scoreText: { fontSize: 48, fontWeight: 'bold', color: '#2D6A4F', marginBottom: spacing.xs },
+    rankText: { fontSize: 14, color: 'rgba(236,244,250,0.72)' },
+    sessionText: { fontSize: 12, marginTop: spacing.sm, color: 'rgba(236,244,250,0.72)' },
+    infoCard: {},
+    infoTitle: { fontSize: 20, fontWeight: '700', color: '#F4F8FB', marginBottom: spacing.sm },
+    infoBody: { fontSize: 14, color: 'rgba(236,244,250,0.82)', lineHeight: 22 },
+    primaryButton: { marginTop: spacing.md, backgroundColor: '#11283A', borderColor: 'rgba(255,255,255,0.1)', shadowOpacity: 0, elevation: 0 },
+    secondaryButton: { marginTop: spacing.sm, backgroundColor: 'transparent', borderColor: 'rgba(255,255,255,0.1)', shadowOpacity: 0, elevation: 0 },
+    actionText: { color: '#FFFFFF' }
 });
 
 export default SustainabilityScreen;

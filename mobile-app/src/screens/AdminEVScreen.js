@@ -1,9 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { colors, spacing, typography } from '../theme/Theme';
-import Card from '../components/Card';
-import Button from '../components/Button';
-import Badge from '../components/Badge';
+import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { spacing } from '../theme/Theme';
+import { AdminActionButton, AdminPill, AdminScreen, AdminPanel, adminColors } from '../components/AdminScaffold';
 import { getEVStations, resetEVStations, updateEVStation } from '../services/apiService';
 
 const cycleStatus = (status) => {
@@ -47,41 +45,41 @@ const AdminEVScreen = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <AdminScreen>
       <ScrollView contentContainerStyle={styles.scroll}>
         <Text style={styles.pageTitle}>EV Charging Management</Text>
 
-        <Card style={styles.card}>
+        <AdminPanel style={styles.card}>
           <Text style={styles.sectionTitle}>Station Summary</Text>
-          <View style={styles.row}><Text>Available</Text><Badge text={`${summary.available}`} status="success" /></View>
-          <View style={styles.row}><Text>Occupied</Text><Badge text={`${summary.occupied}`} status="warning" /></View>
-          <View style={styles.row}><Text>Maintenance</Text><Badge text={`${summary.maintenance}`} status="error" /></View>
-          <Button title="Reset All Stations" variant="outline" onPress={onReset} />
-        </Card>
+          <View style={styles.row}><Text style={styles.label}>Available</Text><AdminPill text={`${summary.available}`} tone="success" /></View>
+          <View style={styles.row}><Text style={styles.label}>Occupied</Text><AdminPill text={`${summary.occupied}`} tone="warning" /></View>
+          <View style={styles.row}><Text style={styles.label}>Maintenance</Text><AdminPill text={`${summary.maintenance}`} tone="error" /></View>
+          <AdminActionButton title="Reset All Stations" variant="outline" onPress={onReset} />
+        </AdminPanel>
 
         {stations.map((station) => (
-          <Card key={station.id} style={styles.card}>
+          <AdminPanel key={station.id} style={styles.card}>
             <View style={styles.row}>
               <Text style={styles.stationId}>{station.id}</Text>
-              <Badge text={station.status} status={station.status === 'Available' ? 'success' : station.status === 'Maintenance' ? 'error' : 'warning'} />
+              <AdminPill text={station.status} tone={station.status === 'Available' ? 'success' : station.status === 'Maintenance' ? 'error' : 'warning'} />
             </View>
             <Text style={styles.booking}>Current: {station.currentBooking || 'None'}</Text>
-            <Button title="Change Status" onPress={() => onUpdateStatus(station)} />
-          </Card>
+            <AdminActionButton title="Change Status" onPress={() => onUpdateStatus(station)} />
+          </AdminPanel>
         ))}
       </ScrollView>
-    </SafeAreaView>
+    </AdminScreen>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
   scroll: { padding: spacing.lg },
-  pageTitle: { ...typography.header, color: colors.primary, marginBottom: spacing.lg },
+  pageTitle: { fontSize: 28, fontWeight: '800', color: adminColors.text, marginBottom: spacing.lg },
   card: { marginBottom: spacing.md },
-  sectionTitle: { ...typography.title, marginBottom: spacing.sm },
-  stationId: { ...typography.title },
-  booking: { ...typography.caption, marginVertical: spacing.sm },
+  sectionTitle: { fontSize: 18, fontWeight: '700', marginBottom: spacing.sm, color: adminColors.text },
+  stationId: { fontSize: 18, fontWeight: '700', color: adminColors.text },
+  booking: { fontSize: 12, marginVertical: spacing.sm, color: adminColors.subtext },
+  label: { color: adminColors.subtext, fontSize: 13 },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm }
 });
 

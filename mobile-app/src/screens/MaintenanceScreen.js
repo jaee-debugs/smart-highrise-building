@@ -1,9 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, Alert } from 'react-native';
-import { colors, typography, spacing } from '../theme/Theme';
-import Card from '../components/Card';
-import Badge from '../components/Badge';
-import Button from '../components/Button';
+import { View, Text, StyleSheet, ScrollView, Alert } from 'react-native';
+import { spacing } from '../theme/Theme';
+import { AdminActionButton, AdminPill, AdminScreen, AdminPanel, adminColors } from '../components/AdminScaffold';
 import { getMaintenanceRequests, updateMaintenanceRequest } from '../services/apiService';
 
 const nextStatus = (status) => {
@@ -38,34 +36,33 @@ const MaintenanceScreen = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <AdminScreen>
       <ScrollView contentContainerStyle={styles.scroll}>
         <Text style={styles.pageTitle}>Maintenance Management</Text>
 
         {requests.map((req) => (
-          <Card key={req.id} style={styles.card}>
+          <AdminPanel key={req.id} style={styles.card}>
             <View style={styles.row}>
               <Text style={styles.issue}>{req.issue}</Text>
-              <Badge text={req.status} status={req.status === 'Resolved' ? 'success' : req.status === 'In Progress' ? 'warning' : 'pending'} />
+              <AdminPill text={req.status} tone={req.status === 'Resolved' ? 'success' : req.status === 'In Progress' ? 'warning' : 'neutral'} />
             </View>
             <Text style={styles.details}>{req.location} • Reported: {req.reportedOn}</Text>
             <Text style={styles.details}>Requested By: {req.requestedBy}</Text>
-            <Button title="Update Status" variant="outline" style={{ marginTop: spacing.sm }} onPress={() => onUpdate(req)} />
-          </Card>
+            <AdminActionButton title="Update Status" variant="outline" style={{ marginTop: spacing.sm }} onPress={() => onUpdate(req)} />
+          </AdminPanel>
         ))}
       </ScrollView>
-    </SafeAreaView>
+    </AdminScreen>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
   scroll: { padding: spacing.lg },
-  pageTitle: { ...typography.header, color: colors.primary, marginBottom: spacing.lg },
+  pageTitle: { fontSize: 28, fontWeight: '800', color: adminColors.text, marginBottom: spacing.lg },
   card: { marginBottom: spacing.md, padding: spacing.lg },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  issue: { ...typography.title, fontWeight: 'bold' },
-  details: { ...typography.body, color: colors.textLight, marginTop: spacing.xs }
+  issue: { fontSize: 18, fontWeight: '700', color: adminColors.text },
+  details: { fontSize: 14, color: adminColors.subtext, marginTop: spacing.xs }
 });
 
 export default MaintenanceScreen;
