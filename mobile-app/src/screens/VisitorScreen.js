@@ -1,58 +1,59 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import React from 'react';
+import { View, Text, StyleSheet, ScrollView, SafeAreaView } from 'react-native';
+import { colors, typography, spacing } from '../theme/Theme';
+import Card from '../components/Card';
+import Badge from '../components/Badge';
+import Button from '../components/Button';
 
 const VisitorScreen = () => {
-    const [visitorName, setVisitorName] = useState('');
-    const [flatNumber, setFlatNumber] = useState('');
-    const [visitTime, setVisitTime] = useState('');
-
-    const generatePass = () => {
-        if (!visitorName || !flatNumber || !visitTime) {
-            Alert.alert('Error', 'Please fill in all fields');
-            return;
-        }
-        Alert.alert('Success', `Visitor pass generated for ${visitorName}`);
-        setVisitorName('');
-        setFlatNumber('');
-        setVisitTime('');
-    };
+    const visitors = [
+        { id: 1, name: 'John Doe', type: 'Delivery', status: 'Expected', time: '14:00' },
+        { id: 2, name: 'Jane Smith', type: 'Guest', status: 'Entered', time: '10:30' }
+    ];
 
     return (
-        <View style={styles.container}>
-            <Text style={styles.title}>Register a Visitor</Text>
+        <SafeAreaView style={styles.container}>
+            <ScrollView contentContainerStyle={styles.scroll}>
+                <View style={styles.headerRow}>
+                    <Text style={styles.pageTitle}>Visitors Log</Text>
+                    <Button title="+ Add" onPress={() => { }} style={styles.addBtn} />
+                </View>
 
-            <TextInput
-                style={styles.input}
-                placeholder="Visitor Name"
-                value={visitorName}
-                onChangeText={setVisitorName}
-            />
-            <TextInput
-                style={styles.input}
-                placeholder="Flat Number"
-                value={flatNumber}
-                onChangeText={setFlatNumber}
-            />
-            <TextInput
-                style={styles.input}
-                placeholder="Time of Visit"
-                value={visitTime}
-                onChangeText={setVisitTime}
-            />
+                {visitors.map(v => (
+                    <Card key={v.id} style={styles.visitorCard}>
+                        <View style={styles.vInfo}>
+                            <Text style={styles.vName}>{v.name}</Text>
+                            <Text style={styles.vType}>{v.type} • {v.time}</Text>
+                        </View>
+                        <Badge text={v.status} status={v.status === 'Entered' ? 'success' : 'pending'} />
+                    </Card>
+                ))}
 
-            <TouchableOpacity style={styles.button} onPress={generatePass}>
-                <Text style={styles.buttonText}>Generate Mock Visitor Pass</Text>
-            </TouchableOpacity>
-        </View>
+                <Card style={styles.qrCard}>
+                    <Text style={styles.qrHeader}>Share Entry Pass</Text>
+                    <View style={styles.qrBox}>
+                        <Text style={styles.qrPlaceholder}>QR Code Config</Text>
+                        <Text style={{ textAlign: 'center', marginTop: 10 }}>Show this QR code at main gate security scanner</Text>
+                    </View>
+                </Card>
+            </ScrollView>
+        </SafeAreaView>
     );
 };
 
 const styles = StyleSheet.create({
-    container: { flex: 1, padding: 20, backgroundColor: '#fff' },
-    title: { fontSize: 24, fontWeight: 'bold', marginBottom: 20 },
-    input: { borderWidth: 1, borderColor: '#ddd', padding: 16, borderRadius: 8, marginBottom: 16 },
-    button: { backgroundColor: '#9c27b0', padding: 16, borderRadius: 8, alignItems: 'center' },
-    buttonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' }
+    container: { flex: 1, backgroundColor: colors.background },
+    scroll: { padding: spacing.lg },
+    headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.lg },
+    pageTitle: { ...typography.header, color: colors.primary },
+    addBtn: { paddingVertical: 8, paddingHorizontal: 16 },
+    visitorCard: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: spacing.lg },
+    vName: { ...typography.title },
+    vType: { ...typography.body, color: colors.textLight },
+    qrCard: { marginTop: spacing.xl, padding: spacing.xl },
+    qrHeader: { ...typography.title, textAlign: 'center', marginBottom: spacing.md },
+    qrBox: { backgroundColor: '#EAEAEA', borderRadius: 8, height: 200, justifyContent: 'center', alignItems: 'center' },
+    qrPlaceholder: { fontSize: 24, fontWeight: 'bold', color: '#999' }
 });
 
 export default VisitorScreen;

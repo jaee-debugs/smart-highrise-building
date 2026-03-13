@@ -1,57 +1,84 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert } from 'react-native';
+import { View, Text, TextInput, StyleSheet, SafeAreaView, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import { colors, typography, spacing } from '../theme/Theme';
+import Button from '../components/Button';
+import Card from '../components/Card';
+import { login } from '../services/apiService';
 
 const LoginScreen = ({ navigation }) => {
-    const [email, setEmail] = useState('');
+    const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const [loading, setLoading] = useState(false);
 
-    const handleLogin = (role) => {
-        if (!email || !password) {
-            Alert.alert('Error', 'Please enter both email and password.');
+    const handleLogin = async (role) => {
+        // For demonstration, simply redirecting based on role selected if no input is provided
+        if (!username || !password) {
+            navigation.replace(role === 'Admin' ? 'AdminDashboard' : 'ResidentDashboard');
             return;
         }
 
-        // Redirect based on selected role
-        if (role === 'admin') {
-            navigation.replace('AdminDashboard');
-        } else {
-            navigation.replace('ResidentDashboard');
+        setLoading(true);
+        try {
+            const data = await login(username, password);
+            if (data.role === 'Admin') {
+                navigation.replace('AdminDashboard');
+            } else {
+                navigation.replace('ResidentDashboard');
+            }
+        } catch (error) {
+            Alert.alert('Login Failed', 'Please use "admin/admin" or "resident/resident"');
+        } finally {
+            setLoading(false);
         }
     };
 
     return (
         <SafeAreaView style={styles.container}>
-            <View style={styles.content}>
-                <Text style={styles.title}>Smart High-Rise</Text>
-                <Text style={styles.subtitle}>Welcome back</Text>
-
-                <TextInput
-                    style={styles.input}
-                    placeholder="Email address"
-                    value={email}
-                    onChangeText={setEmail}
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                />
-
-                <TextInput
-                    style={styles.input}
-                    placeholder="Password"
-                    value={password}
-                    onChangeText={setPassword}
-                    secureTextEntry
-                />
-
-                <View style={styles.buttonContainer}>
-                    <TouchableOpacity style={[styles.button, styles.residentBtn]} onPress={() => handleLogin('resident')}>
-                        <Text style={styles.buttonText}>Login as Resident</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity style={[styles.button, styles.adminBtn]} onPress={() => handleLogin('admin')}>
-                        <Text style={styles.buttonText}>Login as Admin</Text>
-                    </TouchableOpacity>
+            <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.content}>
+                <View style={styles.header}>
+                    <Text style={styles.title}>Smart High-Rise</Text>
+                    <Text style={styles.subtitle}>Future Living Ecosystem</Text>
                 </View>
-            </View>
+
+                <Card style={styles.card}>
+                    <View style={styles.inputGroup}>
+                        <Text style={styles.label}>Username</Text>
+                        <TextInput
+                            style={styles.input}
+                            placeholder="Enter username (e.g. resident / admin)"
+                            value={username}
+                            onChangeText={setUsername}
+                            autoCapitalize="none"
+                        />
+                    </View>
+
+                    <View style={styles.inputGroup}>
+                        <Text style={styles.label}>Password</Text>
+                        <TextInput
+                            style={styles.input}
+                            placeholder="Enter password"
+                            value={password}
+                            onChangeText={setPassword}
+                            secureTextEntry
+                        />
+                    </View>
+
+                    <View style={styles.buttonContainer}>
+                        <Button
+                            title="Login as Resident"
+                            onPress={() => handleLogin('Resident')}
+                            loading={loading}
+                            style={{ marginBottom: spacing.sm }}
+                        />
+                        <Button
+                            title="Login as Admin"
+                            variant="secondary"
+                            onPress={() => handleLogin('Admin')}
+                            loading={loading}
+                        />
+                    </View>
+                </Card>
+            </KeyboardAvoidingView>
         </SafeAreaView>
     );
 };
@@ -59,54 +86,52 @@ const LoginScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f5f5f5',
+        backgroundColor: colors.background,
     },
     content: {
         flex: 1,
-        padding: 24,
+        padding: spacing.lg,
         justifyContent: 'center',
     },
+    header: {
+        alignItems: 'center',
+        marginBottom: spacing.xl * 1.5,
+    },
     title: {
+        ...typography.header,
         fontSize: 32,
-        fontWeight: 'bold',
-        color: '#333',
-        marginBottom: 8,
-        textAlign: 'center',
+        color: colors.primary,
+        marginBottom: spacing.xs,
     },
     subtitle: {
-        fontSize: 18,
-        color: '#666',
-        marginBottom: 48,
-        textAlign: 'center',
+        ...typography.body,
+        color: colors.accent,
+        fontWeight: 'bold',
+        textTransform: 'uppercase',
+        letterSpacing: 1,
+    },
+    card: {
+        padding: spacing.xl,
+    },
+    inputGroup: {
+        marginBottom: spacing.lg,
+    },
+    label: {
+        ...typography.body,
+        fontWeight: 'bold',
+        marginBottom: spacing.xs,
     },
     input: {
-        backgroundColor: '#fff',
+        backgroundColor: colors.surface,
         borderRadius: 8,
-        padding: 16,
-        marginBottom: 16,
+        padding: 14,
         fontSize: 16,
         borderWidth: 1,
-        borderColor: '#ddd',
+        borderColor: '#E1E8EE',
+        color: colors.textDark,
     },
     buttonContainer: {
-        marginTop: 24,
-    },
-    button: {
-        padding: 16,
-        borderRadius: 8,
-        alignItems: 'center',
-        marginBottom: 12,
-    },
-    residentBtn: {
-        backgroundColor: '#007AFF',
-    },
-    adminBtn: {
-        backgroundColor: '#5856D6',
-    },
-    buttonText: {
-        color: '#fff',
-        fontSize: 16,
-        fontWeight: '600',
+        marginTop: spacing.md,
     }
 });
 

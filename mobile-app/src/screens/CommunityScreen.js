@@ -1,37 +1,65 @@
 import React from 'react';
-import { View, Text, StyleSheet, FlatList } from 'react-native';
-
-const NOTICES = [
-    { id: '1', title: 'Fire Drill Scheduled', date: '2026-03-10', content: 'There will be a mandatory fire drill at 10 AM.' },
-    { id: '2', title: 'Pool Maintenance', date: '2026-03-12', content: 'The community pool will be closed for cleaning.' },
-];
+import { View, Text, StyleSheet, ScrollView, SafeAreaView } from 'react-native';
+import { colors, typography, spacing } from '../theme/Theme';
+import Card from '../components/Card';
+import Badge from '../components/Badge';
 
 const CommunityScreen = () => {
     return (
-        <View style={styles.container}>
-            <Text style={styles.title}>Community Notices</Text>
-            <FlatList
-                data={NOTICES}
-                keyExtractor={item => item.id}
-                renderItem={({ item }) => (
-                    <View style={styles.card}>
-                        <Text style={styles.cardTitle}>{item.title}</Text>
-                        <Text style={styles.date}>{item.date}</Text>
-                        <Text style={styles.content}>{item.content}</Text>
+        <SafeAreaView style={styles.container}>
+            <ScrollView contentContainerStyle={styles.scroll}>
+                <Text style={styles.pageTitle}>Community Hub</Text>
+
+                <Text style={styles.sectionHeader}>Important Notices</Text>
+                <Card style={styles.card}>
+                    <View style={styles.head}>
+                        <Badge text="Alert" status="error" />
+                        <Text style={styles.date}>2023-10-30</Text>
                     </View>
-                )}
-            />
-        </View>
+                    <Text style={styles.title}>Water Tank Cleaning</Text>
+                    <Text style={styles.body}>No water supply from 10 AM to 2 PM today.</Text>
+                </Card>
+
+                <Text style={styles.sectionHeader}>Active Polls</Text>
+                <Card style={styles.card}>
+                    <Text style={styles.title}>New Gym Equipment?</Text>
+                    <View style={styles.pollOption}>
+                        <Text style={styles.pollLabel}>Treadmill ( 70% )</Text>
+                        <View style={styles.pollBarBg}><View style={[styles.pollBarFill, { width: '70%' }]} /></View>
+                    </View>
+                    <View style={styles.pollOption}>
+                        <Text style={styles.pollLabel}>Dumbbells ( 30% )</Text>
+                        <View style={styles.pollBarBg}><View style={[styles.pollBarFill, { width: '30%' }]} /></View>
+                    </View>
+                </Card>
+
+                <Text style={styles.sectionHeader}>Upcoming Events</Text>
+                <Card style={styles.card}>
+                    <View style={styles.head}>
+                        <Text style={styles.title}>Diwali Celebration</Text>
+                        <Badge text="RSVP" />
+                    </View>
+                    <Text style={styles.body}>Central Lawn • 12 Nov, 6:00 PM</Text>
+                </Card>
+            </ScrollView>
+        </SafeAreaView>
     );
 };
 
 const styles = StyleSheet.create({
-    container: { flex: 1, padding: 16, backgroundColor: '#f9f9f9' },
-    title: { fontSize: 24, fontWeight: 'bold', marginBottom: 16 },
-    card: { backgroundColor: '#fff', padding: 16, borderRadius: 8, marginBottom: 12, elevation: 2 },
-    cardTitle: { fontSize: 18, fontWeight: '600' },
-    date: { fontSize: 12, color: '#888', marginBottom: 8 },
-    content: { fontSize: 14, color: '#444' }
+    container: { flex: 1, backgroundColor: colors.background },
+    scroll: { padding: spacing.lg },
+    pageTitle: { ...typography.header, color: colors.primary, marginBottom: spacing.xl },
+    sectionHeader: { ...typography.title, color: colors.textDark, marginBottom: spacing.sm },
+    card: { marginBottom: spacing.xl, padding: spacing.lg },
+    head: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: spacing.sm },
+    date: { ...typography.caption },
+    title: { fontSize: 18, fontWeight: 'bold', color: colors.primary, marginBottom: spacing.xs },
+    body: { ...typography.body, color: colors.textLight },
+    pollOption: { marginTop: spacing.md },
+    pollLabel: { ...typography.body, marginBottom: 4 },
+    pollBarBg: { height: 10, backgroundColor: '#E0E0E0', borderRadius: 5 },
+    pollBarFill: { height: 10, backgroundColor: colors.primary, borderRadius: 5 }
 });
 
 export default CommunityScreen;

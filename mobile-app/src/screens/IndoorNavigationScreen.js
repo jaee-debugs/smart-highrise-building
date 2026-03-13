@@ -1,40 +1,51 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, Image, StyleSheet } from 'react-native';
+import React from 'react';
+import { View, Text, StyleSheet, SafeAreaView, Image } from 'react-native';
+import { colors, typography, spacing } from '../theme/Theme';
+import Card from '../components/Card';
+import Button from '../components/Button';
 
 const IndoorNavigationScreen = () => {
-    const [showMap, setShowMap] = useState(false);
-
     return (
-        <View style={styles.container}>
-            <Text style={styles.title}>Indoor 3D Map (Placeholder)</Text>
-            <Text style={styles.subtitle}>This screen will integrate Archicad models in the future.</Text>
+        <SafeAreaView style={styles.container}>
+            <View style={styles.content}>
+                <Card style={styles.mapCard}>
+                    <View style={styles.placeholderBox}>
+                        <Text style={styles.placeholderIcon}>🗺️</Text>
+                        <Text style={styles.placeholderTitle}>3D Digital Twin Map</Text>
+                        <Text style={styles.placeholderDesc}>Interactive building layout mapping your path to amenities.</Text>
+                    </View>
+                    <Button title="View 3D Map" onPress={() => alert('Static map display ready for 3D render engine integration.')} />
+                </Card>
 
-            {!showMap ? (
-                <TouchableOpacity style={styles.button} onPress={() => setShowMap(true)}>
-                    <Text style={styles.buttonText}>View 3D Map</Text>
-                </TouchableOpacity>
-            ) : (
-                <View style={styles.mapContainer}>
-                    {/* Using a local asset if available, fallback to a local require */}
-                    <Image
-                        source={{ uri: 'https://via.placeholder.com/400x400.png?text=Floorplan+Placeholder' }}
-                        style={styles.image}
-                        resizeMode="contain"
-                    />
+                <View style={styles.routingInfo}>
+                    <Text style={styles.routeHeader}>Smart Routing</Text>
+                    <Text style={styles.routeDetail}>• Fastest route to Gym: Lift 2, Floor 5</Text>
+                    <Text style={styles.routeDetail}>• Nearest Emergency Exit: Stairwell B (50m)</Text>
                 </View>
-            )}
-        </View>
+            </View>
+        </SafeAreaView>
     );
 };
 
 const styles = StyleSheet.create({
-    container: { flex: 1, padding: 20, alignItems: 'center', backgroundColor: '#fff' },
-    title: { fontSize: 24, fontWeight: 'bold', marginBottom: 10 },
-    subtitle: { fontSize: 14, color: '#666', textAlign: 'center', marginBottom: 30 },
-    button: { backgroundColor: '#007AFF', padding: 16, borderRadius: 8, width: '100%', alignItems: 'center' },
-    buttonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
-    mapContainer: { width: '100%', height: 400, borderWidth: 1, borderColor: '#ddd', borderRadius: 8, overflow: 'hidden', justifyContent: 'center', alignItems: 'center' },
-    image: { width: '100%', height: '100%', backgroundColor: '#eee' }
+    container: { flex: 1, backgroundColor: colors.background },
+    content: { padding: spacing.lg, flex: 1, justifyContent: 'center' },
+    mapCard: { padding: spacing.lg, marginBottom: spacing.xl },
+    placeholderBox: {
+        backgroundColor: '#EAEAEA',
+        height: 250,
+        borderRadius: 8,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: spacing.lg,
+        padding: spacing.md
+    },
+    placeholderIcon: { fontSize: 48, marginBottom: spacing.sm },
+    placeholderTitle: { ...typography.title, fontWeight: 'bold' },
+    placeholderDesc: { ...typography.body, textAlign: 'center', color: colors.textLight, marginTop: spacing.sm },
+    routingInfo: { padding: spacing.md },
+    routeHeader: { ...typography.title, marginBottom: spacing.sm },
+    routeDetail: { ...typography.body, marginBottom: spacing.xs, color: colors.textDark }
 });
 
 export default IndoorNavigationScreen;
