@@ -2,42 +2,62 @@ import axios from 'axios';
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 
-const getApiBaseUrl = () => {
+const DEV_MACHINE_IP = '192.168.0.101';
+
+const getApiBaseUrls = () => {
   const hostUri =
     Constants.expoConfig?.hostUri ||
     Constants.manifest2?.extra?.expoClient?.hostUri ||
-    Constants.manifest?.debuggerHost;
+    Constants.manifest?.debuggerHost ||
+    Constants.expoConfig?.extra?.apiHost;
 
   const detectedHost = hostUri ? hostUri.split(':')[0] : null;
-  if (detectedHost) {
-    return `http://${detectedHost}:5000/api`;
+  const candidates = [];
+
+  if (detectedHost && detectedHost !== 'localhost' && detectedHost !== '127.0.0.1') {
+    candidates.push(`http://${detectedHost}:5000/api`);
   }
 
   if (Platform.OS === 'android') {
-    return 'http://10.0.2.2:5000/api';
+    candidates.push(`http://${DEV_MACHINE_IP}:5000/api`);
+    candidates.push('http://10.0.2.2:5000/api');
+  } else {
+    candidates.push('http://localhost:5000/api');
+    candidates.push(`http://${DEV_MACHINE_IP}:5000/api`);
   }
 
-  return 'http://localhost:5000/api';
+  return [...new Set(candidates)];
 };
 
-const API_BASE_URL = getApiBaseUrl();
+const API_BASE_URLS = getApiBaseUrls();
 
 const api = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: API_BASE_URLS[0],
   timeout: 8000,
 });
 
 const request = async (fn, message, options = {}) => {
   const { suppressErrorLog = false } = options;
-  try {
-    const response = await fn();
-    return response.data;
-  } catch (error) {
-    if (!suppressErrorLog) {
-      console.error(message, error?.response?.data || error.message);
+  const baseUrls = [api.defaults.baseURL, ...API_BASE_URLS.filter((url) => url !== api.defaults.baseURL)].filter(Boolean);
+  let lastError;
+
+  for (const baseURL of baseUrls) {
+    try {
+      api.defaults.baseURL = baseURL;
+      const response = await fn();
+      return response.data;
+    } catch (error) {
+      lastError = error;
+      if (error?.response) {
+        break;
+      }
     }
-    throw error;
   }
+
+  if (!suppressErrorLog) {
+    console.error(message, lastError?.response?.data || lastError?.message);
+  }
+  throw lastError;
 };
 
 export const login = (username, password, options = {}) =>
@@ -53,7 +73,7 @@ export const getParkingStatus = () => request(() => api.get('/parking'), 'Error 
 export const updateParkingStatus = (slotId, status) =>
   request(() => api.put(`/parking/${slotId}`, { status }), 'Error updating parking slot');
 
-export const getInfraStatus = () => request(() => api.get('/admin/infra'), 'Error fetching infra status');
+export const getInfraStatus = () => request(() => api.get('/admin/infra'), 'Error fetching infra status', { suppressErrorLog: true });
 export const updateGeneratorStatus = (payload) =>
   request(() => api.put('/admin/infra/generator', payload), 'Error updating generator');
 export const resolveEmergency = (id) =>
@@ -62,7 +82,7 @@ export const resolveEmergency = (id) =>
 export const triggerEmergencySOS = (payload) =>
   request(() => api.post('/admin/emergency', payload), 'Error triggering SOS');
 export const getEmergencyEvents = (sinceId = 0) =>
-  request(() => api.get(`/admin/emergencies?sinceId=${sinceId}`), 'Error fetching emergency events');
+  request(() => api.get(`/admin/emergencies?sinceId=${sinceId}`), 'Error fetching emergency events', { suppressErrorLog: true });
 
 export const getEVStations = () => request(() => api.get('/charging'), 'Error fetching EV stations');
 export const updateEVStation = (id, status, currentBooking = null) =>

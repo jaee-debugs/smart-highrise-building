@@ -18,8 +18,9 @@ const CCTV_DEMO_FEEDS = {
   'Basement Parking': require('../assets/cctv/basement-parking.mp4'),
   'Tower A Lobby': require('../assets/cctv/tower-a-lobby.mp4'),
   'Tower B Lobby': require('../assets/cctv/tower-b-lobby.mp4'),
-  'Tower A Elevator': require('../assets/cctv/tower-a-elevator.mp4'),
-  'Tower B Elevator': require('../assets/cctv/tower-b-elevator.mp4')
+  // Use known device-compatible feeds for elevator cards to avoid black/codec issues.
+  'Tower A Elevator': require('../assets/cctv/main-entrance.mp4'),
+  'Tower B Elevator': require('../assets/cctv/basement-parking.mp4')
 };
 
 const SecurityScreen = () => {
@@ -40,6 +41,7 @@ const SecurityScreen = () => {
   };
 
   const isCameraOnline = (camera) => camera?.status === 'Online';
+  const isActiveCamera = (camera) => camera?.id === activeCamera?.id;
 
   const activeCamera = useMemo(
     () => cameras.find((cam) => cam.id === activeCameraId) || cameras[0],
@@ -157,7 +159,7 @@ const SecurityScreen = () => {
                     <Video
                       source={getCameraFeedSource(camera)}
                       style={styles.feedVideo}
-                      shouldPlay
+                      shouldPlay={isActiveCamera(camera)}
                       isLooping
                       isMuted
                       resizeMode={ResizeMode.COVER}

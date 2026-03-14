@@ -49,7 +49,11 @@ const AdminDashboard = ({ navigation }) => {
       const response = await getEmergencyEvents(latestEmergencyId.current);
       if (response.events.length > 0) {
         latestEmergencyId.current = response.latestId;
-        setEmergencies((prev) => [...response.events, ...prev].slice(0, 10));
+        setEmergencies((prev) => {
+          const merged = [...response.events, ...prev];
+          const unique = merged.filter((event, index, list) => index === list.findIndex((item) => item.id === event.id));
+          return unique.slice(0, 10);
+        });
         playAlarm();
       }
     } catch (error) {
