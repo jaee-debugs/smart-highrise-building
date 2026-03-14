@@ -71,7 +71,7 @@ const LoginScreen = ({ navigation }) => {
 
         setLoading(true);
         try {
-            const data = await login(username, password);
+            const data = await login(username, password, { suppressErrorLog: true });
             if (data.role === 'Admin') {
                 navigation.replace('AdminDashboard');
             } else {

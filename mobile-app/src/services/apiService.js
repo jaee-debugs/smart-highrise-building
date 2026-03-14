@@ -27,18 +27,21 @@ const api = axios.create({
   timeout: 8000,
 });
 
-const request = async (fn, message) => {
+const request = async (fn, message, options = {}) => {
+  const { suppressErrorLog = false } = options;
   try {
     const response = await fn();
     return response.data;
   } catch (error) {
-    console.error(message, error?.response?.data || error.message);
+    if (!suppressErrorLog) {
+      console.error(message, error?.response?.data || error.message);
+    }
     throw error;
   }
 };
 
-export const login = (username, password) =>
-  request(() => api.post('/auth/login', { username, password }), 'Error logging in');
+export const login = (username, password, options = {}) =>
+  request(() => api.post('/auth/login', { username, password }), 'Error logging in', options);
 
 export const getWaterLevels = () => request(() => api.get('/water'), 'Error fetching water levels');
 export const updateWaterLevel = (id, payload) =>

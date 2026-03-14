@@ -128,13 +128,12 @@ const AdminDashboard = ({ navigation }) => {
         <Text style={styles.sectionTitle}>Management Modules</Text>
         <View style={styles.grid}>
           {features.map((item) => (
-            <AdminPanel key={item.id} style={styles.gridItem} onPress={() => navigation.navigate(item.route)}>
-              <Text style={styles.modulePress}>
+            <View key={item.id} style={styles.gridCell}>
+              <AdminPanel style={styles.gridItem} onPress={() => navigation.navigate(item.route)}>
                 <Text style={styles.icon}>{item.icon}</Text>
-                {'\n'}
-                <Text style={styles.itemTitle}>{item.title}</Text>
-              </Text>
-            </AdminPanel>
+                <Text style={styles.itemTitle} numberOfLines={2}>{item.title}</Text>
+              </AdminPanel>
+            </View>
           ))}
         </View>
       </ScrollView>
@@ -161,10 +160,17 @@ const styles = StyleSheet.create({
   liveRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   smallAction: { minWidth: 94 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
-  gridItem: { width: '48%', paddingVertical: spacing.xl, marginBottom: spacing.md },
-  modulePress: { textAlign: 'center', color: adminColors.text },
-  icon: { fontSize: 22, fontWeight: '700', color: adminColors.commandGreen },
-  itemTitle: { fontSize: 14, fontWeight: '700', textAlign: 'center', color: adminColors.text, lineHeight: 20 }
+  gridCell: { width: '48%', marginBottom: spacing.md },
+  gridItem: {
+    width: '100%',
+    minHeight: 118,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.sm,
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  icon: { fontSize: 38, fontWeight: '800', color: adminColors.commandGreen, marginBottom: spacing.xs, textAlign: 'center' },
+  itemTitle: { fontSize: 19, fontWeight: '700', textAlign: 'center', color: adminColors.text, lineHeight: 26 }
 });
 
 export default AdminDashboard;

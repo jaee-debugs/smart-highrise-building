@@ -39,12 +39,20 @@ export const AdminPanel = ({ children, style, sharp = false, onPress }) => {
     return <Wrapper style={[styles.webPanel, sharp && styles.sharpPanel, style]} onPress={onPress}>{children}</Wrapper>;
   }
 
+  if (onPress) {
+    return (
+      <Wrapper onPress={onPress} style={style}>
+        <BlurView intensity={sharp ? 12 : 10} tint="dark" style={[styles.nativePanel, sharp && styles.sharpPanel, styles.pressableFill]}>
+          {children}
+        </BlurView>
+      </Wrapper>
+    );
+  }
+
   return (
-    <Wrapper onPress={onPress}>
-      <BlurView intensity={sharp ? 12 : 10} tint="dark" style={[styles.nativePanel, sharp && styles.sharpPanel, style]}>
-        {children}
-      </BlurView>
-    </Wrapper>
+    <BlurView intensity={sharp ? 12 : 10} tint="dark" style={[styles.nativePanel, sharp && styles.sharpPanel, style]}>
+      {children}
+    </BlurView>
   );
 };
 
@@ -144,6 +152,9 @@ const styles = StyleSheet.create({
     borderColor: adminColors.panelBorder,
     backgroundColor: adminColors.obsidian,
     overflow: 'hidden',
+  },
+  pressableFill: {
+    width: '100%',
   },
   sharpPanel: {
     borderRadius: 16,
