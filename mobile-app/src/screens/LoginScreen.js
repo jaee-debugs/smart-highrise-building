@@ -78,7 +78,22 @@ const LoginScreen = ({ navigation }) => {
                 navigation.replace('ResidentDashboard');
             }
         } catch (error) {
-            Alert.alert('Login Failed', 'Please use "admin/admin" or "resident/resident"');
+            const normalizedUser = String(username).trim().toLowerCase();
+            const normalizedPass = String(password).trim().toLowerCase();
+            const residentUsernames = ['resident', 'resident-a101', 'resident a101'];
+
+            // Offline/mobile fallback keeps demo login usable even if backend URL is unreachable.
+            if (role === 'Resident' && residentUsernames.includes(normalizedUser) && normalizedPass === 'resident') {
+                navigation.replace('ResidentDashboard');
+                return;
+            }
+
+            if (role === 'Admin' && normalizedUser === 'admin' && normalizedPass === 'admin') {
+                navigation.replace('AdminDashboard');
+                return;
+            }
+
+            Alert.alert('Login Failed', 'Use admin/admin or resident/resident');
         } finally {
             setLoading(false);
         }

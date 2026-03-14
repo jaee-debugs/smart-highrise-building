@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Alert, TextInput } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Alert, TextInput, Modal, Pressable } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
+import { ResizeMode, Video } from 'expo-av';
 import { spacing } from '../theme/Theme';
 import { AdminActionButton, AdminPanel, AdminPill, AdminScreen, LivePanel, StatusLED, adminColors } from '../components/AdminScaffold';
 import {
@@ -12,6 +13,15 @@ import {
   verifyVisitorPass
 } from '../services/apiService';
 
+const CCTV_DEMO_FEEDS = {
+  'Main Entrance': require('../assets/cctv/main-entrance.mp4'),
+  'Basement Parking': require('../assets/cctv/basement-parking.mp4'),
+  'Tower A Lobby': require('../assets/cctv/tower-a-lobby.mp4'),
+  'Tower B Lobby': require('../assets/cctv/tower-b-lobby.mp4'),
+  'Tower A Elevator': require('../assets/cctv/tower-a-elevator.mp4'),
+  'Tower B Elevator': require('../assets/cctv/tower-b-elevator.mp4')
+};
+
 const SecurityScreen = () => {
   const [permission, requestPermission] = useCameraPermissions();
   const [scannerVisible, setScannerVisible] = useState(false);
@@ -22,6 +32,14 @@ const SecurityScreen = () => {
   const [entryLogs, setEntryLogs] = useState([]);
   const [scanned, setScanned] = useState(null);
   const [manualToken, setManualToken] = useState('');
+  const [fullScreenVisible, setFullScreenVisible] = useState(false);
+
+  const getCameraFeedSource = (camera) => {
+    if (!camera) return null;
+    return CCTV_DEMO_FEEDS[camera.area] || require('../assets/cctv/tower-a-lobby.mp4');
+  };
+
+  const isCameraOnline = (camera) => camera?.status === 'Online';
 
   const activeCamera = useMemo(
     () => cameras.find((cam) => cam.id === activeCameraId) || cameras[0],
@@ -126,8 +144,30 @@ const SecurityScreen = () => {
           <Text style={styles.sectionTitle}>CCTV Monitoring</Text>
           <View style={styles.grid}>
             {cameras.map((camera) => (
-              <AdminPanel key={camera.id} style={[styles.camThumb, activeCamera?.id === camera.id && styles.camSelected]} onPress={() => setActiveCameraId(camera.id)}>
-                <View style={styles.mockFeed}><Text style={styles.mockText}>{camera.area}</Text></View>
+              <AdminPanel
+                key={camera.id}
+                style={[styles.camThumb, activeCamera?.id === camera.id && styles.camSelected]}
+                onPress={() => {
+                  setActiveCameraId(camera.id);
+                  setFullScreenVisible(true);
+                }}
+              >
+                <View style={styles.mockFeed}>
+                  {isCameraOnline(camera) ? (
+                    <Video
+                      source={getCameraFeedSource(camera)}
+                      style={styles.feedVideo}
+                      shouldPlay
+                      isLooping
+                      isMuted
+                      resizeMode={ResizeMode.COVER}
+                    />
+                  ) : (
+                    <View style={styles.offlineFeed}>
+                      <Text style={styles.offlineText}>OFFLINE</Text>
+                    </View>
+                  )}
+                </View>
                 <View style={styles.rowBetween}>
                   <View style={styles.cameraMeta}><StatusLED online={camera.status === 'Online'} /><Text style={styles.cameraId}>{camera.id}</Text></View>
                   <Text style={styles.cameraStatus}>{camera.status}</Text>
@@ -139,12 +179,59 @@ const SecurityScreen = () => {
           {activeCamera && (
             <View style={styles.detailView}>
               <Text style={styles.detailTitle}>Detailed View: {activeCamera.area}</Text>
-              <View style={styles.detailFeed}>
-                <Text style={styles.mockTextLarge}>{activeCamera.id} LIVE FEED</Text>
-              </View>
+              <Pressable style={styles.detailFeed} onPress={() => setFullScreenVisible(true)}>
+                {isCameraOnline(activeCamera) ? (
+                  <Video
+                    source={getCameraFeedSource(activeCamera)}
+                    style={styles.detailVideo}
+                    shouldPlay
+                    isLooping
+                    isMuted
+                    resizeMode={ResizeMode.COVER}
+                  />
+                ) : (
+                  <View style={styles.offlineFeed}>
+                    <Text style={styles.offlineText}>OFFLINE</Text>
+                  </View>
+                )}
+                <View style={styles.detailOverlay}>
+                  <Text style={styles.mockTextLarge}>{isCameraOnline(activeCamera) ? `${activeCamera.id} LIVE FEED` : `${activeCamera.id} OFFLINE`}</Text>
+                </View>
+              </Pressable>
             </View>
           )}
         </LivePanel>
+
+        <Modal visible={fullScreenVisible} animationType="fade" transparent onRequestClose={() => setFullScreenVisible(false)}>
+          <View style={styles.fullScreenBackdrop}>
+            <View style={styles.fullScreenHeader}>
+              <View>
+                <Text style={styles.fullScreenTitle}>{activeCamera?.area || 'CCTV Feed'}</Text>
+                <Text style={styles.fullScreenSubtitle}>{activeCamera?.id || '-'}</Text>
+              </View>
+              <Pressable onPress={() => setFullScreenVisible(false)} style={styles.closeButton}>
+                <Text style={styles.closeText}>Close</Text>
+              </Pressable>
+            </View>
+
+            <View style={styles.fullScreenPlayerWrap}>
+              {activeCamera && isCameraOnline(activeCamera) ? (
+                <Video
+                  source={getCameraFeedSource(activeCamera)}
+                  style={styles.fullScreenVideo}
+                  shouldPlay
+                  isLooping
+                  isMuted
+                  resizeMode={ResizeMode.CONTAIN}
+                />
+              ) : (
+                <View style={styles.offlineFeedFull}>
+                  <Text style={styles.offlineTextFull}>{activeCamera?.id || 'CAMERA'} OFFLINE</Text>
+                </View>
+              )}
+            </View>
+          </View>
+        </Modal>
 
         <AdminPanel style={styles.card}>
           <Text style={styles.sectionTitle}>Visitor Verification (QR Scan)</Text>
@@ -226,6 +313,16 @@ const styles = StyleSheet.create({
   camThumb: { width: '48%', marginBottom: spacing.sm, padding: spacing.sm },
   camSelected: { borderWidth: 1, borderColor: 'rgba(0,255,65,0.35)' },
   mockFeed: { height: 80, backgroundColor: '#0A1118', borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
+  feedVideo: { width: '100%', height: '100%', borderRadius: 8 },
+  offlineFeed: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 8,
+    backgroundColor: '#000000',
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  offlineText: { color: 'rgba(255,255,255,0.55)', fontSize: 11, fontWeight: '700', letterSpacing: 1 },
   mockText: { color: '#D8E2EE', fontSize: 12, fontWeight: 'bold' },
   rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.sm },
   cameraMeta: { flexDirection: 'row', alignItems: 'center', gap: 8 },
@@ -234,7 +331,54 @@ const styles = StyleSheet.create({
   detailView: { marginTop: spacing.md },
   detailTitle: { color: adminColors.text, marginBottom: spacing.sm, fontWeight: '700', fontSize: 14 },
   detailFeed: { height: 170, borderRadius: 10, backgroundColor: '#0D131A', justifyContent: 'center', alignItems: 'center' },
+  detailVideo: { width: '100%', height: '100%', borderRadius: 10 },
+  detailOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.18)'
+  },
   mockTextLarge: { color: '#D8E2EE', fontWeight: 'bold', fontSize: 16 },
+  fullScreenBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(2,8,14,0.94)',
+    justifyContent: 'center',
+    padding: spacing.md
+  },
+  fullScreenHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.md
+  },
+  fullScreenTitle: { color: adminColors.text, fontWeight: '800', fontSize: 18 },
+  fullScreenSubtitle: { color: adminColors.subtext, fontWeight: '600', fontSize: 12, marginTop: 3 },
+  closeButton: {
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.15)',
+    borderRadius: 10,
+    backgroundColor: '#0C1722',
+    paddingHorizontal: 12,
+    paddingVertical: 8
+  },
+  closeText: { color: adminColors.text, fontWeight: '700', fontSize: 12 },
+  fullScreenPlayerWrap: {
+    flex: 1,
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: '#050B12',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)'
+  },
+  fullScreenVideo: { width: '100%', height: '100%' },
+  offlineFeedFull: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#000000',
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  offlineTextFull: { color: 'rgba(255,255,255,0.68)', fontSize: 16, fontWeight: '700', letterSpacing: 1 },
   cameraWrap: { height: 260, overflow: 'hidden', borderRadius: 12, marginBottom: spacing.md },
   camera: { flex: 1 },
   input: {
